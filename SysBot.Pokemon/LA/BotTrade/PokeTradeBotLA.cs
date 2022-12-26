@@ -281,6 +281,7 @@ namespace SysBot.Pokemon
 
             var tradePartner = await GetTradePartnerInfo(token).ConfigureAwait(false);
             var trainerNID = await GetTradePartnerNID(TradePartnerNIDOffset, token).ConfigureAwait(false);
+            tradePartner.NID = trainerNID;
             RecordUtil<PokeTradeBot>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.TrainerName}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
             Log($"Found Link Trade partner: {tradePartner.TrainerName}-{tradePartner.TID7} (ID: {trainerNID})");
 
@@ -329,6 +330,11 @@ namespace SysBot.Pokemon
                 return update;
             }
 
+            if (Hub.Config.Legality.UseTradePartnerInfo)
+            {
+                await SetBoxPkmWithSwappedIDDetailsPLA(toSend, tradePartner, sav, token);
+            }
+
             Log("Confirming trade.");
             var tradeResult = await ConfirmAndStartTrading(poke, token).ConfigureAwait(false);
             if (tradeResult != PokeTradeResult.Success)
@@ -362,6 +368,10 @@ namespace SysBot.Pokemon
             // Only log if we completed the trade.
             UpdateCountsAndExport(poke, received, toSend);
 
+            // Still need to wait out the trade animation.
+            for (var i = 0; i < 30; i++)
+                await Click(B, 0_500, token).ConfigureAwait(false);
+
             await ExitTrade(false, token).ConfigureAwait(false);
             return PokeTradeResult.Success;
         }
@@ -391,27 +401,36 @@ namespace SysBot.Pokemon
             var oldEC = await SwitchConnection.ReadBytesAbsoluteAsync(BoxStartOffset, 8, token).ConfigureAwait(false);
 
             await Click(A, 3_000, token).ConfigureAwait(false);
-            for (int i = 0; i < Hub.Config.Trade.MaxTradeConfirmTime; i++)
+            for (int i = 0; i < 10; i++)
             {
                 if (await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                     return PokeTradeResult.TrainerLeft;
                 if (await IsUserBeingShifty(detail, token).ConfigureAwait(false))
                     return PokeTradeResult.SuspiciousActivity;
-                await Click(A, 1_000, token).ConfigureAwait(false);
+                await Click(A, 1_500, token).ConfigureAwait(false);
+            }
 
-                // EC is detectable at the start of the animation.
+            var tradeCounter = 0;
+            while (true)
+            {
                 var newEC = await SwitchConnection.ReadBytesAbsoluteAsync(BoxStartOffset, 8, token).ConfigureAwait(false);
                 if (!newEC.SequenceEqual(oldEC))
                 {
-                    await Task.Delay(30_000, token).ConfigureAwait(false);
+                    await Task.Delay(5_000, token).ConfigureAwait(false);
                     return PokeTradeResult.Success;
                 }
-            }
-            if (await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
-                return PokeTradeResult.TrainerLeft;
 
-            // If we don't detect a B1S1 change, the trade didn't go through in that time.
-            return PokeTradeResult.TrainerTooSlow;
+                tradeCounter++;
+
+                if (tradeCounter >= Hub.Config.Trade.TradeAnimationMaxDelaySeconds)
+                {
+                    // If we don't detect a B1S1 change, the trade didn't go through in that time.
+                    return PokeTradeResult.TrainerTooSlow;
+                }
+
+                if (await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
+                    return PokeTradeResult.TrainerLeft;
+            }
         }
 
         protected virtual async Task<bool> WaitForTradePartner(CancellationToken token)
@@ -543,7 +562,10 @@ namespace SysBot.Pokemon
         {
             var id = await SwitchConnection.PointerPeek(4, Offsets.LinkTradePartnerTIDPointer, token).ConfigureAwait(false);
             var name = await SwitchConnection.PointerPeek(TradePartnerLA.MaxByteLengthStringObject, Offsets.LinkTradePartnerNamePointer, token).ConfigureAwait(false);
-            return new TradePartnerLA(id, name);
+            var traderOffset = await SwitchConnection.PointerAll(Offsets.LinkTradePartnerTIDPointer, token).ConfigureAwait(false);
+            var idbytes = await SwitchConnection.ReadBytesAbsoluteAsync(traderOffset + 0x04, 4, token).ConfigureAwait(false);
+
+            return new TradePartnerLA(id, name, idbytes);
         }
 
         protected virtual async Task<(PA8 toSend, PokeTradeResult check)> GetEntityToSend(SAV8LA sav, PokeTradeDetail<PA8> poke, PA8 offered, PA8 toSend, PartnerDataHolder partnerID, CancellationToken token)
@@ -811,5 +833,36 @@ namespace SysBot.Pokemon
             Name = name,
             Comment = $"Added automatically on {DateTime.Now:yyyy.MM.dd-hh:mm:ss} ({comment})",
         };
+
+        // based on https://github.com/Muchacho13Scripts/SysBot.NET/commit/f7879386f33bcdbd95c7a56e7add897273867106
+        // and https://github.com/berichan/SysBot.PLA/commit/84042d4716007dc6ff3100ad4be4a483d622ccf8
+        private async Task<bool> SetBoxPkmWithSwappedIDDetailsPLA(PA8 toSend, TradePartnerLA tradePartner, SAV8LA sav, CancellationToken token)
+        {
+            var cln = (PA8)toSend.Clone();
+            cln.OT_Gender = tradePartner.Gender;
+            cln.TrainerID7 = int.Parse(tradePartner.TID7);
+            cln.TrainerSID7 = int.Parse(tradePartner.SID7);
+            cln.Language = tradePartner.Language;
+            cln.OT_Name = tradePartner.TrainerName;
+            cln.ClearNickname();
+
+            if (toSend.IsShiny)
+                cln.SetShiny();
+
+            cln.RefreshChecksum();
+
+            var tradela = new LegalityAnalysis(cln);
+            if (tradela.Valid)
+            {
+                Log($"Pokemon is valid, use trade partnerInfo");
+                await SetBoxPokemonAbsolute(BoxStartOffset, cln, token, sav).ConfigureAwait(false);
+            }
+            else
+            {
+                Log($"Pokemon not valid, do nothing to trade Pokemon");
+            }
+
+            return tradela.Valid;
+        }
     }
 }

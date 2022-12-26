@@ -74,5 +74,8 @@ namespace SysBot.Pokemon
 
         [Category(Misc), Description("Zero out HOME tracker regardless of current tracker value. Applies to user requested PKM files as well.")]
         public bool ResetHOMETracker { get; set; } = true;
+
+        [Category(Misc), Description("Override trainer data by trade partner")]
+        public bool UseTradePartnerInfo { get; set; } = false;
     }
 }

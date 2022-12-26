@@ -1,31 +1,31 @@
-﻿using PKHeX.Core;
+﻿using Mirai.Net.Sessions.Http.Managers;
+using PKHeX.Core;
 using SysBot.Base;
+using SysBot.Pokemon;
 using System;
 using System.Linq;
-using TwitchLib.Client;
+using Mirai.Net.Data.Messages;
+using Mirai.Net.Data.Messages.Concretes;
+using Mirai.Net.Utils.Scaffolds;
 
-namespace SysBot.Pokemon.Twitch
+namespace SysBot.Pokemon.QQ
 {
-    public class TwitchTradeNotifier<T> : IPokeTradeNotifier<T> where T : PKM, new()
+    public class MiraiQQTradeNotifier<T> : IPokeTradeNotifier<T> where T : PKM, new()
     {
         private T Data { get; }
         private PokeTradeTrainerInfo Info { get; }
         private int Code { get; }
         private string Username { get; }
-        private TwitchClient Client { get; }
-        private string Channel { get; }
-        private TwitchSettings Settings { get; }
 
-        public TwitchTradeNotifier(T data, PokeTradeTrainerInfo info, int code, string username, TwitchClient client, string channel, TwitchSettings settings)
+        private string GroupId { get; }
+
+        public MiraiQQTradeNotifier(T data, PokeTradeTrainerInfo info, int code, string username, string groupId)
         {
             Data = data;
             Info = info;
             Code = code;
             Username = username;
-            Client = client;
-            Channel = channel;
-            Settings = settings;
-
+            GroupId = groupId;
             LogUtil.LogText($"Created trade details for {Username} - {Code}");
         }
 
@@ -34,7 +34,7 @@ namespace SysBot.Pokemon.Twitch
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)
         {
             LogUtil.LogText(message);
-            SendMessage($"@{info.Trainer.TrainerName}: {message}", Settings.NotifyDestination);
+            //SendMessage($"@{info.Trainer.TrainerName}: {message}");
         }
 
         public void TradeCanceled(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, PokeTradeResult msg)
@@ -42,27 +42,31 @@ namespace SysBot.Pokemon.Twitch
             OnFinish?.Invoke(routine);
             var line = $"@{info.Trainer.TrainerName}: Trade canceled, {msg}";
             LogUtil.LogText(line);
-            SendMessage(line, Settings.TradeCanceledDestination);
+            SendMessage(new AtMessage($"{info.Trainer.ID}").Append(" 取消"));
         }
 
         public void TradeFinished(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, T result)
         {
             OnFinish?.Invoke(routine);
             var tradedToUser = Data.Species;
-            var message = $"@{info.Trainer.TrainerName}: " + (tradedToUser != 0 ? $"Trade finished. Enjoy your {(Species)tradedToUser}!" : "Trade finished!");
+            var message = $"@{info.Trainer.TrainerName}: " + (tradedToUser != 0
+                ? $"Trade finished. Enjoy your {(Species) tradedToUser}!"
+                : "Trade finished!");
             LogUtil.LogText(message);
-            SendMessage(message, Settings.TradeFinishDestination);
+            SendMessage(new AtMessage($"{info.Trainer.ID}").Append(" 完成"));
         }
 
         public void TradeInitialize(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info)
         {
             var receive = Data.Species == 0 ? string.Empty : $" ({Data.Nickname})";
-            var msg = $"@{info.Trainer.TrainerName} (ID: {info.ID}): Initializing trade{receive} with you. Please be ready. Use the code you whispered me to search!";
-            var dest = Settings.TradeStartDestination;
-            if (dest == TwitchMessageDestination.Whisper)
-                msg += $" Your trade code is: {info.Code:0000 0000}";
+            var msg =
+                $"@{info.Trainer.TrainerName} (ID: {info.ID}): Initializing trade{receive} with you. Please be ready.";
+            msg += $" Your trade code is: {info.Code:0000 0000}";
             LogUtil.LogText(msg);
-            SendMessage(msg, dest);
+            SendMessage(MiraiQQBot<T>.TradeCodeDictionary.ContainsKey(info.Trainer.ID.ToString())
+                ? new AtMessage($"{info.Trainer.ID}").Append($" 准备交换\n连接密码是你私信我的\n我的名字:{routine.InGameName}")
+                : new AtMessage($"{info.Trainer.ID}").Append(
+                    $" 准备交换\n连接密码:{info.Code:0000 0000}\n我的名字:{routine.InGameName}"));
         }
 
         public void TradeSearching(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info)
@@ -70,13 +74,9 @@ namespace SysBot.Pokemon.Twitch
             var name = Info.TrainerName;
             var trainer = string.IsNullOrEmpty(name) ? string.Empty : $", @{name}";
             var message = $"I'm waiting for you{trainer}! My IGN is {routine.InGameName}.";
-            var dest = Settings.TradeSearchDestination;
-            if (dest == TwitchMessageDestination.Channel)
-                message += " Use the code you whispered me to search!";
-            else if (dest == TwitchMessageDestination.Whisper)
-                message += $" Your trade code is: {info.Code:0000 0000}";
+            message += $" Your trade code is: {info.Code:0000 0000}";
             LogUtil.LogText(message);
-            SendMessage($"@{info.Trainer.TrainerName} {message}", dest);
+            SendMessage(new AtMessage($"{info.Trainer.ID}").Append($" 寻找中"));
         }
 
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, PokeTradeSummary message)
@@ -85,27 +85,25 @@ namespace SysBot.Pokemon.Twitch
             if (message.Details.Count > 0)
                 msg += ", " + string.Join(", ", message.Details.Select(z => $"{z.Heading}: {z.Detail}"));
             LogUtil.LogText(msg);
-            SendMessage(msg, Settings.NotifyDestination);
+            SendMessage(msg);
         }
 
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, T result, string message)
         {
             var msg = $"Details for {result.FileName}: " + message;
             LogUtil.LogText(msg);
-            SendMessage(msg, Settings.NotifyDestination);
+            SendMessage(msg);
         }
 
-        private void SendMessage(string message, TwitchMessageDestination dest)
+        private void SendMessage(string message)
         {
-            switch (dest)
-            {
-                case TwitchMessageDestination.Channel:
-                    Client.SendMessage(Channel, message);
-                    break;
-                case TwitchMessageDestination.Whisper:
-                    Client.SendWhisper(Username, message);
-                    break;
-            }
+            var _ = MessageManager.SendGroupMessageAsync(GroupId, message).Result;
+            LogUtil.LogInfo($"msgId:{_} {message}", "debug");
+        }
+
+        private void SendMessage(MessageBase[] message)
+        {
+            var _ = MessageManager.SendGroupMessageAsync(GroupId, message).Result;
         }
     }
 }
