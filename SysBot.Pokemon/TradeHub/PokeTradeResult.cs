@@ -5,13 +5,15 @@
         Success,
 
         // Trade Partner Failures
-        NoTrainerFound,
-        TrainerTooSlow,
+        NoTrainerWasFound,
+        NoPokemonDetected,
         TrainerLeft,
-        TrainerOfferCanceledQuick,
+        TrainerHasBadConnection,
         TrainerRequestBad,
         IllegalTrade,
+        TrainerUsingMultipleAccounts,
         SuspiciousActivity,
+        Hiccup_Server,
 
         // Recovery -- General Bot Failures
         // Anything below here should be retried once if possible.

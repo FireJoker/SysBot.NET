@@ -296,7 +296,7 @@ namespace SysBot.Pokemon
                     Log("Failed to recover to portal.");
                     await RecoverToOverworld(token).ConfigureAwait(false);
                 }
-                return PokeTradeResult.NoTrainerFound;
+                return PokeTradeResult.NoTrainerWasFound;
             }
 
             Hub.Config.Stream.EndEnterCode(this);
@@ -348,7 +348,7 @@ namespace SysBot.Pokemon
             {
                 Log("Trade ended because a valid Pokémon was not offered.");
                 await ExitTradeToPortal(false, token).ConfigureAwait(false);
-                return PokeTradeResult.TrainerTooSlow;
+                return PokeTradeResult.NoPokemonDetected;
             }
 
             PokeTradeResult update;
@@ -383,7 +383,7 @@ namespace SysBot.Pokemon
             {
                 Log("User did not complete the trade.");
                 await ExitTradeToPortal(false, token).ConfigureAwait(false);
-                return PokeTradeResult.TrainerTooSlow;
+                return PokeTradeResult.NoPokemonDetected;
             }
 
             // As long as we got rid of our inject in b1s1, assume the trade went through.
@@ -448,7 +448,7 @@ namespace SysBot.Pokemon
                 if (tradeCounter >= Hub.Config.Trade.TradeAnimationMaxDelaySeconds)
                 {
                     // If we don't detect a B1S1 change, the trade didn't go through in that time.
-                    return PokeTradeResult.TrainerTooSlow;
+                    return PokeTradeResult.NoPokemonDetected;
                 }
             }
         }
@@ -759,7 +759,7 @@ namespace SysBot.Pokemon
 
             Log($"Ended Dump loop after processing {ctr} Pokémon.");
             if (ctr == 0)
-                return PokeTradeResult.TrainerTooSlow;
+                return PokeTradeResult.NoPokemonDetected;
 
             TradeSettings.AddCompletedDumps();
             detail.Notifier.SendNotification(this, detail, $"Dumped {ctr} Pokémon.");
@@ -826,7 +826,7 @@ namespace SysBot.Pokemon
             if (!partnerFound || pk2 is null || SearchUtil.HashByDetails(pk2) == SearchUtil.HashByDetails(offered))
             {
                 Log("Trade partner did not change their Pokémon.");
-                return (offered, PokeTradeResult.TrainerTooSlow);
+                return (offered, PokeTradeResult.NoPokemonDetected);
             }
 
             await Click(A, 0_800, token).ConfigureAwait(false);

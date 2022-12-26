@@ -71,6 +71,11 @@ namespace SysBot.Pokemon.Discord
             Trader.SendMessageAsync(msg).ConfigureAwait(false);
         }
 
+        public void SendNotificationTinfo(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)
+        {
+            throw new NotImplementedException();
+        }
+
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, T result, string message)
         {
             if (result.Species != 0 && (Hub.Config.Discord.ReturnPKMs || info.Type == PokeTradeType.Dump))

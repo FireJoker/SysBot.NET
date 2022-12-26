@@ -70,7 +70,7 @@ namespace SysBot.Tests
 
             second.Notifier.TradeInitialize(executor, second);
             second.Notifier.TradeSearching(executor, second);
-            second.Notifier.TradeCanceled(executor, second, PokeTradeResult.TrainerTooSlow);
+            second.Notifier.TradeCanceled(executor, second, PokeTradeResult.NoPokemonDetected);
 
             status = info.CheckPosition(t1.UserID, PokeRoutineType.LinkTrade);
             status.Position.Should().Be(-1);

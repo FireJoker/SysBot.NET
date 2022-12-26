@@ -222,6 +222,11 @@ namespace SysBot.Pokemon
             }
         }
 
+        private void SetText(SAV8BS sav, string text)
+        {
+            System.IO.File.WriteAllText($"BScode{sav.OT}-{sav.DisplayTID}-{sav.DisplaySID}.txt", text);
+        }
+
         private async Task<PokeTradeResult> PerformLinkCodeTrade(SAV8BS sav, PokeTradeDetail<PB8> poke, CancellationToken token)
         {
             sessionTradeCount++;
@@ -247,6 +252,11 @@ namespace SysBot.Pokemon
             if (toSend.Species != 0)
                 await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
 
+            if (poke.Type == PokeTradeType.Random)
+                SetText(sav, $"连接密码: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[toSend.Species]}");
+            else
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}");
+
             // Enter Union Room. Shouldn't do anything if we're already there.
             if (!await EnterUnionRoomWithCode(poke.Type, poke.Code, token).ConfigureAwait(false))
             {
@@ -266,7 +276,7 @@ namespace SysBot.Pokemon
                     await Click(A, 0_450, token).ConfigureAwait(false);
 
                 if (--waitPartner <= 0)
-                    return PokeTradeResult.NoTrainerFound;
+                    return PokeTradeResult.NoTrainerWasFound;
             }
             Log("Found a user talking to us!");
 
@@ -280,7 +290,7 @@ namespace SysBot.Pokemon
                 if (!await IsUnionWork(UnionTalkingOffset, token).ConfigureAwait(false))
                     break;
                 if (--waitPartner <= 0)
-                    return PokeTradeResult.TrainerTooSlow;
+                    return PokeTradeResult.NoPokemonDetected;
             }
             Log("Entering the box...");
 
@@ -289,14 +299,24 @@ namespace SysBot.Pokemon
 
             // Can happen if they quit out of talking to us.
             if (!await IsPartnerParamLoaded(token).ConfigureAwait(false))
-                return PokeTradeResult.TrainerTooSlow;
+                return PokeTradeResult.NoPokemonDetected;
 
+            var traderOffset = await SwitchConnection.PointerAll(Offsets.LinkTradePartnerIDPointer, token).ConfigureAwait(false);
             var tradePartner = await GetTradePartnerInfo(token).ConfigureAwait(false);
-            var trainerNID = GetFakeNID(tradePartner.TrainerName, tradePartner.TrainerID);
-            RecordUtil<PokeTradeBot>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.TrainerName}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
-            Log($"Found Link Trade partner: {tradePartner.TrainerName}-{tradePartner.TID7} (ID: {trainerNID}");
 
-            var partnerCheck = CheckPartnerReputation(poke, trainerNID, tradePartner.TrainerName);
+            var tradePartnerNID = await GetTradePartnerNID(token).ConfigureAwait(false);
+            RecordUtil<PokeTradeBot>.Record($"Initiating\t{tradePartnerNID:X16}\t{tradePartner.TrainerName}\t{poke.Trainer.TrainerName}\t{GameInfo.GetStrings(7).Species[toSend.Species]}");
+            Log($"Found Link Trade partner: {tradePartner.TrainerName}-{tradePartner.TID7}-{tradePartner.SID7}");
+
+            poke.Notifier.SendNotificationTinfo(this, poke, $"找到训练家: {tradePartner.TrainerName}\nTID(表ID): {tradePartner.TID7} \nSID(里ID): {tradePartner.SID7}\n等待交换宝可梦");
+
+            if (poke.Type == PokeTradeType.Random)
+                SetText(sav, $"连接密码: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[toSend.Species]}" +
+                    $"\r\nTID: {tradePartner.TID:000000}\r\nSID: {tradePartner.SID:0000}");
+            else
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}");
+
+            var partnerCheck = CheckPartnerReputation(poke, tradePartnerNID, tradePartner.TrainerName);
             if (partnerCheck != PokeTradeResult.Success)
             {
                 // Try to get out of the box.
@@ -316,11 +336,11 @@ namespace SysBot.Pokemon
             await Task.Delay(2_000, token).ConfigureAwait(false);
 
             // Confirm Box 1 Slot 1
-            if (poke.Type == PokeTradeType.Specific)
-            {
-                for (int i = 0; i < 5; i++)
-                    await Click(A, 0_500, token).ConfigureAwait(false);
-            }
+            //if (poke.Type == PokeTradeType.Specific)
+            //{
+            //    for (int i = 0; i < 5; i++)
+            //        await Click(A, 0_500, token).ConfigureAwait(false);
+            //}
 
             poke.SendNotification(this, $"Found Link Trade partner: {tradePartner.TrainerName}. Waiting for a Pokémon...");
 
@@ -333,16 +353,26 @@ namespace SysBot.Pokemon
             // Wait for user input... Needs to be different from the previously offered Pokémon.
             var tradeOffered = await ReadUntilChanged(LinkTradePokemonOffset, lastOffered, 25_000, 1_000, false, true, token).ConfigureAwait(false);
             if (!tradeOffered)
-                return PokeTradeResult.TrainerTooSlow;
+                return PokeTradeResult.NoPokemonDetected;
 
             // If we detected a change, they offered something.
             var offered = await ReadPokemon(LinkTradePokemonOffset, BoxFormatSlotSize, token).ConfigureAwait(false);
+
+            if (Hub.Config.Legality.UseTradePartnerInfo)
+            {
+                Log($"Changing OT to Partner OT");
+                await SetBoxPkmWithSwappedIDDetailsBDSP(toSend, offered, sav, tradePartner, token);
+                await Click(R, 1_500, token).ConfigureAwait(false);
+                await Click(L, 1_500, token).ConfigureAwait(false);
+                await Task.Delay(1_500, token).ConfigureAwait(false);
+            }
+
             if (offered.Species == 0 || !offered.ChecksumValid)
-                return PokeTradeResult.TrainerTooSlow;
+                return PokeTradeResult.NoPokemonDetected;
             lastOffered = await SwitchConnection.ReadBytesAbsoluteAsync(LinkTradePokemonOffset, 8, token).ConfigureAwait(false);
 
             PokeTradeResult update;
-            var trainer = new PartnerDataHolder(0, tradePartner.TrainerName, tradePartner.TID7);
+            var trainer = new PartnerDataHolder(0, tradePartner.TrainerName, tradePartner.TID7.ToString());
             (toSend, update) = await GetEntityToSend(sav, poke, offered, toSend, trainer, token).ConfigureAwait(false);
             if (update != PokeTradeResult.Success)
                 return update;
@@ -360,7 +390,7 @@ namespace SysBot.Pokemon
             if (SearchUtil.HashByDetails(received) == SearchUtil.HashByDetails(toSend) && received.Checksum == toSend.Checksum)
             {
                 Log("User did not complete the trade.");
-                return PokeTradeResult.TrainerTooSlow;
+                return PokeTradeResult.NoPokemonDetected;
             }
 
             // As long as we got rid of our inject in b1s1, assume the trade went through.
@@ -427,7 +457,7 @@ namespace SysBot.Pokemon
                     return PokeTradeResult.SuspiciousActivity;
                 // We're no longer talking, so they probably quit on us.
                 if (!await IsUnionWork(UnionTalkingOffset, token).ConfigureAwait(false))
-                    return PokeTradeResult.TrainerTooSlow;
+                    return PokeTradeResult.NoPokemonDetected;
                 await Click(A, 1_500, token).ConfigureAwait(false);
             }
 
@@ -446,13 +476,13 @@ namespace SysBot.Pokemon
 
                 // We've somehow failed out of the Union Room -- can happen with connection error.
                 if (!await IsUnionWork(UnionGamingOffset, token).ConfigureAwait(false))
-                    return PokeTradeResult.TrainerTooSlow;
+                    return PokeTradeResult.NoPokemonDetected;
                 if (tradeCounter >= Hub.Config.Trade.TradeAnimationMaxDelaySeconds)
                     break;
             }
 
             // If we don't detect a B1S1 change, the trade didn't go through in that time.
-            return PokeTradeResult.TrainerTooSlow;
+            return PokeTradeResult.NoPokemonDetected;
         }
 
         private async Task<bool> EnterUnionRoomWithCode(PokeTradeType tradeType, int tradeCode, CancellationToken token)
@@ -537,6 +567,8 @@ namespace SysBot.Pokemon
                     return false;
             }
 
+            //  Aviod to talk with other bot
+            await Click(DUP, 2_000, token).ConfigureAwait(false);
             await Task.Delay(1_300 + Hub.Config.Timings.ExtraTimeJoinUnionRoom, token).ConfigureAwait(false);
 
             return true; // We've made it into the room and are ready to request.
@@ -695,7 +727,7 @@ namespace SysBot.Pokemon
 
             Log($"Ended Dump loop after processing {ctr} Pokémon.");
             if (ctr == 0)
-                return PokeTradeResult.TrainerTooSlow;
+                return PokeTradeResult.NoPokemonDetected;
 
             TradeSettings.AddCompletedDumps();
             detail.Notifier.SendNotification(this, detail, $"Dumped {ctr} Pokémon.");
@@ -707,14 +739,16 @@ namespace SysBot.Pokemon
         {
             var id = await SwitchConnection.PointerPeek(4, Offsets.LinkTradePartnerIDPointer, token).ConfigureAwait(false);
             var name = await SwitchConnection.PointerPeek(TradePartnerBS.MaxByteLengthStringObject, Offsets.LinkTradePartnerNamePointer, token).ConfigureAwait(false);
-            return new TradePartnerBS(id, name);
+            var traderOffset = await SwitchConnection.PointerAll(Offsets.LinkTradePartnerIDPointer, token).ConfigureAwait(false);
+            var idbytes = await SwitchConnection.ReadBytesAbsoluteAsync(traderOffset + 0x04, 4, token).ConfigureAwait(false);
+            return new TradePartnerBS(id, idbytes, name);
         }
 
-        protected virtual async Task<(PB8 toSend, PokeTradeResult check)> GetEntityToSend(SAV8BS sav, PokeTradeDetail<PB8> poke, PB8 offered, PB8 toSend, PartnerDataHolder partnerID, CancellationToken token)
+        protected virtual async Task<(PB8 toSend, PokeTradeResult check)> GetEntityToSend(SAV8BS sav, PokeTradeDetail<PB8> poke, PB8 offered, PB8 toSend, PartnerDataHolder partnerInfo, CancellationToken token)
         {
             return poke.Type switch
             {
-                PokeTradeType.Random => await HandleRandomLedy(sav, poke, offered, toSend, partnerID, token).ConfigureAwait(false),
+                PokeTradeType.Random => await HandleRandomLedy(sav, poke, offered, toSend, partnerInfo, token).ConfigureAwait(false),
                 _ => (toSend, PokeTradeResult.Success),
             };
         }
@@ -906,5 +940,98 @@ namespace SysBot.Pokemon
             Name = name,
             Comment = $"Added automatically on {DateTime.Now:yyyy.MM.dd-hh:mm:ss} ({comment})",
         };
+
+        // https://github.com/Muchacho13Scripts/SysBot.NET/commit/f3e3b2331a641300d63260a170cdbb841f95302e
+        private async Task<bool> SetBoxPkmWithSwappedIDDetailsBDSP(PB8 toSend, PB8 offered, SAV8BS sav, TradePartnerBS tradePartner, CancellationToken token)
+        {
+            Log($"Trade partner: {tradePartner.TrainerName} - TID7: {tradePartner.TID7} - SID7: {tradePartner.SID7}");
+            Log($"Offered Pokemon: {(Species)offered.Species}, TName: {offered.OT_Name}, TID: {offered.DisplayTID}, SID: {offered.DisplaySID}, Language: {offered.Language}, OTGender: {offered.OT_Gender}");
+            Log($"Sending Pokemon: {(Species)toSend.Species}, TName: {toSend.OT_Name}, TID: {toSend.DisplayTID}, SID: {toSend.DisplaySID}, Language: {toSend.Language}, OTGender: {toSend.OT_Gender}");
+
+            var cln = (PB8)toSend.Clone();
+
+            // ignore using trade partner info for Ditto
+            if (cln.Species == 132)
+            {
+                cln.Language = cln.Language == offered.Language ? 4 : offered.Language;   //ITA
+                cln.OT_Name = "Ditto";
+                cln.TrainerID7 = tradePartner.TID7;
+                cln.TrainerSID7 = tradePartner.SID7;
+            }
+            else
+            {
+                cln.OT_Gender = offered.OT_Gender;
+                cln.TrainerID7 = tradePartner.TID7;
+                cln.TrainerSID7 = tradePartner.SID7;
+                cln.Language = offered.Language;
+                cln.OT_Name = tradePartner.TrainerName;
+            }
+            
+            if (cln.Nickname == "Egg")
+            {
+                cln.IsEgg = true;
+                cln.IsNicknamed = true;
+
+                if (cln.Language == 1)
+                    cln.Nickname = "タマゴ";
+                else if (cln.Language == 2)
+                    cln.Nickname = "Egg";
+                else if (cln.Language == 3)
+                    cln.Nickname = "Œuf";
+                else if (cln.Language == 4)
+                    cln.Nickname = "Uovo";
+                else if (cln.Language == 5)
+                    cln.Nickname = "Ei";
+                else if (cln.Language == 6)
+                    cln.Nickname = "Huevo";
+                else if (cln.Language == 7)
+                    cln.Nickname = "알";
+                else if (cln.Language == 8)
+                    cln.Nickname = "蛋";
+                else if (cln.Language == 9)
+                    cln.Nickname = "蛋";
+
+                if (cln.Species != 490)
+                    cln.Egg_Location = 60010;
+                if (cln.Species == 490)
+                    cln.Egg_Location = 40001;
+
+                cln.EggMetDate = cln.MetDate = DateTime.Today;
+                cln.Met_Location = 0;
+                cln.EV_ATK = 0;
+                cln.EV_DEF = 0;
+                cln.EV_HP = 0;
+                cln.EV_SPA = 0;
+                cln.EV_SPD = 0;
+                cln.EV_SPE = 0;
+                cln.Met_Level = 1;
+                cln.HeldItem = 0;
+                cln.CurrentFriendship = 1;
+                cln.OT_Friendship = 1;
+                cln.IsEgg = true;
+            }
+
+            if (cln.IsEgg == false)
+                cln.ClearNickname();
+
+            if (toSend.IsShiny)
+                cln.SetShiny();
+
+            cln.RefreshChecksum();
+
+            var tradela = new LegalityAnalysis(cln);
+            if (tradela.Valid)
+            {
+                Log($"Pokemon is valid, use trade partnerInfo");
+                Log($"New Offered Pokemon: {(Species)cln.Species}, TName: {cln.OT_Name}, TID: {cln.DisplayTID}, SID: {cln.DisplaySID}, Language: {cln.Language}, OTGender: {cln.OT_Gender}");
+                await SetBoxPokemonAbsolute(BoxStartOffset, cln, token, sav).ConfigureAwait(false);
+            }
+            else
+            {
+                Log($"Pokemon not valid, do nothing to trade Pokemon");
+            }
+
+            return tradela.Valid;
+        }
     }
 }
