@@ -102,6 +102,10 @@ namespace SysBot.Pokemon.QQ
                     {
                         await MessageManager.SendGroupMessageAsync(GroupId, "当前版本为阿尔宙斯");
                     }
+                    else if (typeof(T) == typeof(PK9))
+                    {
+                        await MessageManager.SendGroupMessageAsync(GroupId, "当前版本为朱紫");
+                    }
 
                     await Task.Delay(1_000).ConfigureAwait(false);
                 }
@@ -204,6 +208,9 @@ namespace SysBot.Pokemon.QQ
             else if (typeof(T) == typeof(PA8) &&
                      fileName.EndsWith(".pa8", StringComparison.OrdinalIgnoreCase))
                 operationType = "pa8";
+            else if (typeof(T) == typeof(PK9) &&
+                     fileName.EndsWith(".pk9", StringComparison.OrdinalIgnoreCase))
+                operationType = "pk9";
             else return;
 
             PKM pkm;
@@ -215,7 +222,7 @@ namespace SysBot.Pokemon.QQ
                 byte[] data = new System.Net.WebClient().DownloadData(url);
                 switch (operationType)
                 {
-                    case "pk8" or "pb8" when data.Length != 344:
+                    case "pk8" or "pb8" or "pk9" when data.Length != 344:
                         await MessageManager.SendGroupMessageAsync(groupId, "非法文件");
                         return;
                     case "pa8" when data.Length != 376:
@@ -233,6 +240,9 @@ namespace SysBot.Pokemon.QQ
                         break;
                     case "pa8":
                         pkm = new PA8(data);
+                        break;
+                    case "pk9":
+                        pkm = new PK9(data);
                         break;
                     default: return;
                 }

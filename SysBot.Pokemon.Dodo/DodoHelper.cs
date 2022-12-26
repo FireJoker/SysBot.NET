@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,6 +31,14 @@ namespace SysBot.Pokemon.Dodo
             DodoBot<T>.SendChannelMessage(message, channelId);
         }
 
+        public static void StartClone(string dodoId, string nickName, string channelId)
+        {
+            var code = DodoBot<T>.Info.GetRandomTradeCode();
+            var __ = AddToTradeQueue(new T(), code, ulong.Parse(dodoId), nickName, channelId,
+                PokeRoutineType.Clone, out string message);
+            DodoBot<T>.SendChannelMessage(message, channelId); 
+        }
+
         public static void StartDump(string dodoId, string nickName, string channelId)
         {
             var code = DodoBot<T>.Info.GetRandomTradeCode();
@@ -37,7 +46,6 @@ namespace SysBot.Pokemon.Dodo
                 PokeRoutineType.Dump, out string message);
             DodoBot<T>.SendChannelMessage(message, channelId);
         }
-
 
         public static bool CheckAndGetPkm(string setstring, string username, out string msg, out T outPkm)
         {
@@ -51,7 +59,7 @@ namespace SysBot.Pokemon.Dodo
             var set = ShowdownUtil.ConvertToShowdown(setstring);
             if (set == null)
             {
-                msg = $"取消派送, <@!{username}>: 宝可梦昵称为空.";
+                msg = $"<@!{username}>: 宝可梦昵称为空.";
                 return false;
             }
 
@@ -59,14 +67,14 @@ namespace SysBot.Pokemon.Dodo
             if (template.Species < 1)
             {
                 msg =
-                    $"取消派送, <@!{username}>: 请使用正确的Showdown Set代码";
+                    $"<@!{username}>: 请使用正确的Showdown Set代码";
                 return false;
             }
 
             if (set.InvalidLines.Count != 0)
             {
                 msg =
-                    $"取消派送, <@!{username}>: 非法的Showdown Set代码:\n{string.Join("\n", set.InvalidLines)}";
+                    $"<@!{username}>: 非法的Showdown Set代码:\n{string.Join("\n", set.InvalidLines)}";
                 return false;
             }
 
@@ -77,7 +85,7 @@ namespace SysBot.Pokemon.Dodo
 
                 if (!pkm.CanBeTraded())
                 {
-                    msg = $"取消派送, <@!{username}>: 官方禁止该宝可梦交易!";
+                    msg = $"<@!{username}>: 官方禁止该宝可梦交易!";
                     return false;
                 }
 
@@ -104,7 +112,7 @@ namespace SysBot.Pokemon.Dodo
 #pragma warning restore CA1031 // Do not catch general exception types
             {
                 LogUtil.LogSafe(ex, nameof(DodoBot<T>));
-                msg = $"取消派送, <@!{username}>: 发生了一个错误";
+                msg = $"<@!{username}>: 发生了一个错误,取消交换";
             }
 
             return false;
@@ -115,7 +123,11 @@ namespace SysBot.Pokemon.Dodo
         {
             var trainer = new PokeTradeTrainerInfo(name, userId);
             var notifier = new DodoTradeNotifier<T>(pk, trainer, code, name, channelId);
-            var tt = type == PokeRoutineType.SeedCheck ? PokeTradeType.Seed : (type == PokeRoutineType.Dump ? PokeTradeType.Dump : PokeTradeType.Specific);
+            var tt = type == PokeRoutineType.SeedCheck ? PokeTradeType.Seed : 
+                (type == PokeRoutineType.Dump ? PokeTradeType.Dump : 
+                (type == PokeRoutineType.Clone ? PokeTradeType.Clone : PokeTradeType.Specific));
+                //PokeRoutineType.SeedCheck ? PokeTradeType.Seed : (type == PokeRoutineType.Dump ? PokeTradeType.Dump : PokeTradeType.Specific);
+
             var detail =
                 new PokeTradeDetail<T>(pk, trainer, notifier, tt, code, true);
             var trade = new TradeEntry<T>(detail, userId, type, name);
@@ -124,22 +136,28 @@ namespace SysBot.Pokemon.Dodo
 
             if (added == QueueResultAdd.AlreadyInQueue)
             {
-                msg = $"<@!{userId}> 你已经在队列中，请不要重复发送";
+                msg = $"<@!{userId}> \n你已经在队列中\n@或私信我并发送位置可查询当前位置";
                 return false;
             }
 
             var position = DodoBot<T>.Info.CheckPosition(userId, type);
             //msg = $"@{name}: Added to the {type} queue, unique ID: {detail.ID}. Current Position: {position.Position}";
-            msg = $" 你在第{position.Position}位";
+            msg = $"<@!{userId}>\n你在第{position.Position}位";
 
             var botct = DodoBot<T>.Info.Hub.Bots.Count;
             if (position.Position > botct)
             {
                 var eta = DodoBot<T>.Info.Hub.Config.Queues.EstimateDelay(position.Position, botct);
                 //msg += $". Estimated: {eta:F1} minutes.";
-                msg += $", 需等待约{eta:F1}分钟";
-            }
+                //msg += $"，需等待约{eta:F1}分钟\n准备交换：{ShowdownTranslator<T>.GameStringsZh.Species[trade.Trade.TradeData.Species]}\n连接密码：{detail.Code:0000 0000}";
 
+                msg += $"\n需等待约{eta:F1}分钟\n{(pk.IsShiny ? "异色" : string.Empty)}{ShowdownTranslator<T>.GameStringsZh.Species[trade.Trade.TradeData.Species]}{(pk.IsEgg ? "(蛋)" : string.Empty)}准备中\n@或私信我并发送位置可查询当前位置\n@或私信我并发送取消可取消排队";
+            }
+            else
+            {
+                msg += $"\n{(pk.IsShiny ? "异色" : string.Empty)}{ShowdownTranslator<T>.GameStringsZh.Species[trade.Trade.TradeData.Species]}{(pk.IsEgg ? "(蛋)" : string.Empty)}准备完成";
+
+            }
             return true;
         }
     }
