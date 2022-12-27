@@ -141,12 +141,6 @@ namespace SysBot.Base
             return Encoding.ASCII.GetString(bytes).Trim();
         }
 
-        public async Task<bool> IsProgramRunning(ulong pid, CancellationToken token)
-        {
-            var bytes = await ReadRaw(SwitchCommand.IsProgramRunning(pid), 17, token).ConfigureAwait(false);
-            return ulong.TryParse(Encoding.ASCII.GetString(bytes).Trim(), out var value) && value == 1;
-        }
-
         private async Task<byte[]> Read(ulong offset, int length, SwitchOffsetType type, CancellationToken token)
         {
             var method = type.GetReadMethod();
@@ -234,6 +228,27 @@ namespace SysBot.Base
             var offsetBytes = await ReadBytesFromCmdAsync(SwitchCommand.PointerRelative(jumps), sizeof(ulong), token).ConfigureAwait(false);
             Array.Reverse(offsetBytes, 0, 8);
             return BitConverter.ToUInt64(offsetBytes, 0);
+        }
+
+        public async Task<byte[]> PixelPeek(CancellationToken token)
+        {
+            var buffer = new byte[(0x7D000 * 2)+1];
+            await SendAsync(SwitchCommand.PixelPeek(), token).ConfigureAwait(false);
+            var len = Read(buffer);
+            return buffer.Take(len).ToArray();
+        }
+
+        public async Task<string> GetVersion(CancellationToken token)
+        {
+            var bytes = await ReadRaw(SwitchCommand.GetVersion(), 9, token).ConfigureAwait(false);
+            return Encoding.UTF8.GetString(bytes).TrimEnd('\0').TrimEnd('\n'); ;
+        }
+
+        public async Task<bool> IsProgramRunning(string titleID, CancellationToken token)
+        {
+            var bytes = await ReadRaw(SwitchCommand.IsProgramRunning(titleID), 17, token).ConfigureAwait(false);
+            var isRunning = Encoding.ASCII.GetString(bytes);
+            return ulong.Parse(isRunning.Trim(), System.Globalization.NumberStyles.HexNumber) == 1;
         }
     }
 }

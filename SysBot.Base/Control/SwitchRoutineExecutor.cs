@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -91,6 +92,14 @@ namespace SysBot.Base
                 await Task.Delay(waitInterval, token).ConfigureAwait(false);
             } while (sw.ElapsedMilliseconds < waitms);
             return false;
+        }
+
+        public static async Task<string> GetVersionAsync(ISwitchConnectionAsync connection, CancellationToken token)
+        {
+            var gvbytes = Encoding.ASCII.GetBytes("getVersion\r\n");
+            byte[] socketReturn = await connection.ReadRaw(gvbytes, 9, token).ConfigureAwait(false);
+            string version = Encoding.UTF8.GetString(socketReturn).TrimEnd('\0').TrimEnd('\n');
+            return version;
         }
     }
 }

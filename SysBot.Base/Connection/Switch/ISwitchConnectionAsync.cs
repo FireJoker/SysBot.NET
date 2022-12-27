@@ -12,7 +12,6 @@ namespace SysBot.Base
         Task<ulong> GetMainNsoBaseAsync(CancellationToken token);
         Task<ulong> GetHeapBaseAsync(CancellationToken token);
         Task<string> GetTitleID(CancellationToken token);
-        Task<bool> IsProgramRunning(ulong pid, CancellationToken token);
 
         Task<byte[]> ReadBytesMainAsync(ulong offset, int length, CancellationToken token);
         Task<byte[]> ReadBytesAbsoluteAsync(ulong offset, int length, CancellationToken token);
@@ -31,5 +30,9 @@ namespace SysBot.Base
         Task PointerPoke(byte[] data, IEnumerable<long> jumps, CancellationToken token);
         Task<ulong> PointerAll(IEnumerable<long> jumps, CancellationToken token);
         Task<ulong> PointerRelative(IEnumerable<long> jumps, CancellationToken token);
+        Task<byte[]> PixelPeek(CancellationToken token);
+        Task<string> GetVersion(CancellationToken token);
+
+        Task<bool> IsProgramRunning(string titleID, CancellationToken token);
     }
 }

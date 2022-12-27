@@ -4,6 +4,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using static SysBot.Base.SwitchOffsetType;
+using System.Linq;
+using System.Text;
 
 namespace SysBot.Base
 {
@@ -67,16 +69,6 @@ namespace SysBot.Base
             }, token);
         }
 
-        public Task<bool> IsProgramRunning(ulong pid, CancellationToken token)
-        {
-            return Task.Run(() =>
-            {
-                Send(SwitchCommand.IsProgramRunning(pid, false));
-                byte[] baseBytes = ReadBulkUSB();
-                return baseBytes.Length == 1 && BitConverter.ToBoolean(baseBytes, 0);
-            }, token);
-        }
-
         public Task<byte[]> ReadRaw(byte[] command, int length, CancellationToken token)
         {
             return Task.Run(() =>
@@ -122,6 +114,39 @@ namespace SysBot.Base
                 Send(SwitchCommand.PointerRelative(jumps, false));
                 byte[] baseBytes = ReadBulkUSB();
                 return BitConverter.ToUInt64(baseBytes, 0);
+            }, token);
+        }
+
+        public Task<byte[]> PixelPeek(CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                Send(SwitchCommand.PixelPeek(false));
+                var buffer = ReadBulkUSB();
+                return buffer;
+            }, token);
+        }
+
+        public Task<string> GetVersion(CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                Send(SwitchCommand.GetVersion(false));
+                byte[] baseBytes = ReadBulkUSB();
+                Log($"getVersion:{BitConverter.ToString(baseBytes)}");
+                string version = Encoding.UTF8.GetString(baseBytes).TrimEnd('\0').TrimEnd('\n');
+                return "2.2";
+            }, token);
+        }
+
+        public Task<bool> IsProgramRunning(string titleID, CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                Send(SwitchCommand.IsProgramRunning(titleID, false));
+                byte[] baseBytes = ReadBulkUSB();
+                Log($"IsProgramRunning:{BitConverter.ToString(baseBytes)}");
+                return baseBytes[0] == 1;
             }, token);
         }
     }
