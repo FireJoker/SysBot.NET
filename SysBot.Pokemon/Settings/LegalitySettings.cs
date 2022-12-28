@@ -52,6 +52,9 @@ namespace SysBot.Pokemon
         [Category(Generate), Description("Force the specified ball if legal.")]
         public bool ForceSpecifiedBall { get; set; } = false;
 
+        [Category(Generate), Description("Force use the mark.")]
+        public bool UseMarking { get; set; } = false;
+
         [Category(Generate), Description("Allow XOROSHIRO when generating Gen 8 Raid Pokémon.")]
         public bool UseXOROSHIRO { get; set; } = true;
 

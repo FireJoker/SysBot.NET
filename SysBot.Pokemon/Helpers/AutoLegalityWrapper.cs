@@ -32,6 +32,7 @@ namespace SysBot.Pokemon
             APILegality.SetAllLegalRibbons = cfg.SetAllLegalRibbons;
             APILegality.SetMatchingBalls = cfg.SetMatchingBalls;
             APILegality.ForceSpecifiedBall = cfg.ForceSpecifiedBall;
+            APILegality.UseMarkings = cfg.UseMarking;
             APILegality.UseXOROSHIRO = cfg.UseXOROSHIRO;
             Legalizer.EnableEasterEggs = cfg.EnableEasterEggs;
             APILegality.AllowTrainerOverride = cfg.AllowTrainerDataOverride;
@@ -40,6 +41,7 @@ namespace SysBot.Pokemon
             APILegality.PrioritizeGameVersion= cfg.PrioritizeGameVersion;
             APILegality.SetBattleVersion = cfg.SetBattleVersion;
             APILegality.Timeout = cfg.Timeout;
+            APILegality.UseTrainerData = cfg.UseTradePartnerInfo;
         }
 
         private static void InitializeTrainerDatabase(LegalitySettings cfg)
