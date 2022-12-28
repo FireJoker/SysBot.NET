@@ -32,7 +32,7 @@ namespace SysBot.Pokemon
                 zh = zh.Replace(GameStringsZh.Species[candidateSpecieNo], "");
 
                 // 特殊性别差异
-                // 29-尼多兰F，32-尼多朗M，678-超能妙喵F，876-爱管侍F，902-幽尾玄鱼F, 916-飘香豚
+                // 29-尼多兰F，32-尼多朗M，678-超能妙喵，876-爱管侍，902-幽尾玄鱼, 916-飘香豚
                 if ((candidateSpecieNo is 678 or 876 or 902 or 916) && zh.Contains("母")) result += "-F";
             }
             else
@@ -51,16 +51,21 @@ namespace SysBot.Pokemon
             }
 
             // 识别地区形态
-            if (zh.Contains("帕底亚的样子（火）形态"))
+            if (zh.Contains("帕底亚的样子火形态"))
             {
                 result += $"-Paldea-Fire";
-                zh = zh.Replace("帕底亚的样子（火）形态", "");
+                zh = zh.Replace("帕底亚的样子火形态", "");
             } 
-            else if (zh.Contains("帕底亚的样子（水）形态"))
+            else if (zh.Contains("帕底亚的样子水形态"))
             {
                 result += $"-Paldea-Water";
-                zh = zh.Replace("帕底亚的样子（水）形态", "");
+                zh = zh.Replace("帕底亚的样子水形态", "");
             } 
+            else if (zh.Contains("四只家庭"))
+            {
+                result += $"-Four";
+                zh = zh.Replace("四只家庭", "");
+            }
             else
             {
                 for (int i = 0; i < GameStringsZh.forms.Length; i++)

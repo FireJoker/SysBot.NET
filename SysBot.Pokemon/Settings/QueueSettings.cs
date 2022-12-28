@@ -18,7 +18,7 @@ namespace SysBot.Pokemon
         public bool CanQueue { get; set; } = true;
 
         [Category(FeatureToggle), Description("Prevents adding users if there are this many users in the queue already.")]
-        public int MaxQueueCount { get; set; } = 999;
+        public int MaxQueueCount { get; set; } = 100;
 
         [Category(FeatureToggle), Description("Allows users to dequeue while being traded.")]
         public bool CanDequeueIfProcessing { get; set; }
@@ -75,7 +75,13 @@ namespace SysBot.Pokemon
         public int YieldMultWaitDump { get; set; } = 1;
 
         [Category(TimeBias), Description("Multiplies the amount of users in queue to give an estimate of how much time it will take until the user is processed.")]
-        public float EstimatedDelayFactor { get; set; } = 1.1f;
+        public float EstimatedDelayFactor { get; set; } = 2.0f;
+
+        [Category(UserBias), Description("How many people needed to be in the queue to send a reminder.")]
+        public int ReminderQueueCountStart { get; set; } = 150;
+
+        [Category(UserBias), Description("Minimum position user needs to be in to send reminder.")]
+        public int ReminderAtPosition { get; set; } = 120;
 
         private int GetCountBias(PokeTradeType type) => type switch
         {
@@ -134,6 +140,7 @@ namespace SysBot.Pokemon
     {
         LessCheatyFirst,
         Weighted,
+        LinearWebBotPrioritise,
     }
 
     public enum QueueOpening

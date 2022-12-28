@@ -319,7 +319,7 @@ namespace SysBot.Pokemon
             var trainerNID = await GetTradePartnerNID(TradePartnerNIDOffset, token).ConfigureAwait(false);
             RecordUtil<PokeTradeBot>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.OT}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
             Log($"Found Link Trade partner: {tradePartner.OT}-{tradePartner.DisplayTID} (ID: {trainerNID})");
-            poke.Notifier.SendNotificationTinfo(this, poke, $"找到训练家: {tradePartner.OT}\nTID(表ID): {tradePartner.DisplayTID:D6)} \nSID(里ID): {tradePartner.DisplaySID:D4)}\n等待交换宝可梦");
+            poke.Notifier.SendNotificationTinfo(this, poke, $"找到训练家: {tradePartner.OT}\nTID(表ID): {tradePartner.DisplayTID:D6} \nSID(里ID): {tradePartner.DisplaySID:D4}\n等待交换宝可梦");
 
             if (poke.Type == PokeTradeType.Random)
                 SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}" +
