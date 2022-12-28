@@ -211,6 +211,16 @@ namespace SysBot.Pokemon
             return data[0] == 1;
         }
 
+        public async Task<TradeMyStatus> GetTradePartnerInfo(CancellationToken token)
+        {
+            // We're able to see both users' MyStatus, but one of them will be ourselves.
+            var trader_info = await GetTradePartnerMyStatus(Offsets.Trader1MyStatusPointer, token).ConfigureAwait(false);
+            var sav_info = await IdentifyTrainer(token);
+            if (trader_info.OT == sav_info.OT && trader_info.DisplaySID == sav_info.DisplaySID && trader_info.DisplayTID == sav_info.DisplayTID) // This one matches ourselves.
+                trader_info = await GetTradePartnerMyStatus(Offsets.Trader2MyStatusPointer, token).ConfigureAwait(false);
+            return trader_info;
+        }
+
         public async Task<ulong> GetTradePartnerNID(ulong offset, CancellationToken token)
         {
             var data = await SwitchConnection.ReadBytesAbsoluteAsync(offset, 8, token).ConfigureAwait(false);

@@ -22,6 +22,6 @@ namespace SysBot.Pokemon
         public IReadOnlyList<long> OverworldPointer { get; } = new long[] { 0x43A7848, 0x348, 0x10, 0xD8, 0x28 };
 
         public const int BoxFormatSlotSize = 0x158;
-        public const ulong LibAppletWeID = 0x010000000000100a; // One of the process IDs for the news.
+        public const string LibAppletWeID = "010000000000100a"; // One of the process IDs for the news.
     }
 }
