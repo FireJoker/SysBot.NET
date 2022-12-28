@@ -222,13 +222,13 @@ namespace SysBot.Pokemon
             }
         }
 
-        private void SetText(SAV8BS sav, string text)
-        {
-            System.IO.File.WriteAllText($"BScode{sav.OT}-{sav.DisplayTID}-{sav.DisplaySID}.txt", text);
-        }
-
         private async Task<PokeTradeResult> PerformLinkCodeTrade(SAV8BS sav, PokeTradeDetail<PB8> poke, CancellationToken token)
         {
+            if (poke.Type == PokeTradeType.Random)
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+            else
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+
             sessionTradeCount++;
             Log($"Starting trade #{sessionTradeCount} for this session.");
             // Update Barrier Settings
@@ -251,11 +251,6 @@ namespace SysBot.Pokemon
             var toSend = poke.TradeData;
             if (toSend.Species != 0)
                 await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
-
-            if (poke.Type == PokeTradeType.Random)
-                SetText(sav, $"连接密码: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[toSend.Species]}");
-            else
-                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}");
 
             // Enter Union Room. Shouldn't do anything if we're already there.
             if (!await EnterUnionRoomWithCode(poke.Type, poke.Code, token).ConfigureAwait(false))
@@ -307,14 +302,13 @@ namespace SysBot.Pokemon
             var tradePartnerNID = await GetTradePartnerNID(token).ConfigureAwait(false);
             RecordUtil<PokeTradeBot>.Record($"Initiating\t{tradePartnerNID:X16}\t{tradePartner.TrainerName}\t{poke.Trainer.TrainerName}\t{GameInfo.GetStrings(7).Species[toSend.Species]}");
             Log($"Found Link Trade partner: {tradePartner.TrainerName}-{tradePartner.TID7}-{tradePartner.SID7}");
-
             poke.Notifier.SendNotificationTinfo(this, poke, $"找到训练家: {tradePartner.TrainerName}\nTID(表ID): {tradePartner.TID7} \nSID(里ID): {tradePartner.SID7}\n等待交换宝可梦");
 
             if (poke.Type == PokeTradeType.Random)
-                SetText(sav, $"连接密码: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[toSend.Species]}" +
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}" +
                     $"\r\nTID: {tradePartner.TID:000000}\r\nSID: {tradePartner.SID:0000}");
             else
-                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}");
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
 
             var partnerCheck = CheckPartnerReputation(poke, tradePartnerNID, tradePartner.TrainerName);
             if (partnerCheck != PokeTradeResult.Success)
@@ -925,33 +919,29 @@ namespace SysBot.Pokemon
             Comment = $"Added automatically on {DateTime.Now:yyyy.MM.dd-hh:mm:ss} ({comment})",
         };
 
+        private void SetText(SAV8BS sav, string text)
+        {
+            System.IO.File.WriteAllText($"BScode{sav.OT}-{sav.DisplayTID}-{sav.DisplaySID}.txt", text);
+        }
+
+
         // https://github.com/Muchacho13Scripts/SysBot.NET/commit/f3e3b2331a641300d63260a170cdbb841f95302e
         private async Task<bool> SetBoxPkmWithSwappedIDDetailsBDSP(PB8 toSend, PB8 offered, SAV8BS sav, TradePartnerBS tradePartner, CancellationToken token)
         {
-            Log($"Trade partner: {tradePartner.TrainerName} - TID7: {tradePartner.TID7} - SID7: {tradePartner.SID7}");
-            Log($"Offered Pokemon: {(Species)offered.Species}, TName: {offered.OT_Name}, TID: {offered.DisplayTID}, SID: {offered.DisplaySID}, Language: {offered.Language}, OTGender: {offered.OT_Gender}");
-            Log($"Sending Pokemon: {(Species)toSend.Species}, TName: {toSend.OT_Name}, TID: {toSend.DisplayTID}, SID: {toSend.DisplaySID}, Language: {toSend.Language}, OTGender: {toSend.OT_Gender}");
-
-            var cln = (PB8)toSend.Clone();
-
             // ignore using trade partner info for Ditto
-            if (cln.Species == 132)
+            if (toSend.Species == 132)
             {
-                cln.Language = cln.Language == offered.Language ? 4 : offered.Language;   //ITA
-                cln.OT_Name = "Ditto";
-                cln.TrainerID7 = tradePartner.TID7;
-                cln.TrainerSID7 = tradePartner.SID7;
+                Log($"Do nothing to trade Pokemon, since pokemon is Ditto");
+                return false;
             }
-            else
-            {
-                cln.OT_Gender = offered.OT_Gender;
-                cln.TrainerID7 = tradePartner.TID7;
-                cln.TrainerSID7 = tradePartner.SID7;
-                cln.Language = offered.Language;
-                cln.OT_Name = tradePartner.TrainerName;
-            }
+            var cln = (PB8)toSend.Clone();
+            cln.OT_Gender = offered.OT_Gender;
+            cln.TrainerID7 = tradePartner.TID7;
+            cln.TrainerSID7 = tradePartner.SID7;
+            cln.Language = offered.Language;
+            cln.OT_Name = tradePartner.TrainerName;
             
-            if (cln.Nickname == "Egg")
+            if (cln.Nickname is "Egg" or "蛋")
             {
                 cln.IsEgg = true;
                 cln.IsNicknamed = true;
@@ -1003,8 +993,8 @@ namespace SysBot.Pokemon
 
             cln.RefreshChecksum();
 
-            var tradela = new LegalityAnalysis(cln);
-            if (tradela.Valid)
+            var tradebs = new LegalityAnalysis(cln);
+            if (tradebs.Valid)
             {
                 Log($"Pokemon is valid, use trade partnerInfo");
                 Log($"New Offered Pokemon: {(Species)cln.Species}, TName: {cln.OT_Name}, TID: {cln.DisplayTID}, SID: {cln.DisplaySID}, Language: {cln.Language}, OTGender: {cln.OT_Gender}");
@@ -1015,7 +1005,7 @@ namespace SysBot.Pokemon
                 Log($"Pokemon not valid, do nothing to trade Pokemon");
             }
 
-            return tradela.Valid;
+            return tradebs.Valid;
         }
     }
 }

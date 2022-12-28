@@ -219,13 +219,13 @@ namespace SysBot.Pokemon
             }
         }
 
-        private void SetText(SAV8SWSH sav, string text)
-        {
-            System.IO.File.WriteAllText($"SScode-{sav.OT}-{sav.DisplayTID}-{sav.DisplaySID}.txt", text);
-        }
-
         private async Task<PokeTradeResult> PerformLinkCodeTrade(SAV8SWSH sav, PokeTradeDetail<PK8> poke, CancellationToken token)
         {
+            if (poke.Type == PokeTradeType.Random)
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+            else
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+
             // Update Barrier Settings
             UpdateBarrier(poke.IsSynchronized);
             poke.TradeInitialize(this);
@@ -238,11 +238,6 @@ namespace SysBot.Pokemon
             var toSend = poke.TradeData;
             if (toSend.Species != 0)
                 await SetBoxPokemon(toSend, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
-
-            if (poke.Type == PokeTradeType.Random)
-                SetText(sav, $"连接密码: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[toSend.Species]}");
-            else
-                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}");
 
             if (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
             {
@@ -327,13 +322,12 @@ namespace SysBot.Pokemon
             Log($"Found Link Trade partner: {trainerName}-{trainerTID[0]}-{trainerTID[1]} (ID: {trainerNID})");
 
             poke.Notifier.SendNotificationTinfo(this, poke, $"找到训练家: {trainerName}\nTID(表ID): {trainerTID[0]} \nSID(里ID): {trainerTID[1]}\n等待交换宝可梦");
-
+            
             if (poke.Type == PokeTradeType.Random)
-                SetText(sav, $"连接密码: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[toSend.Species]}" +
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}" +
                     $"\r\nTID: {trainerTID[0]:000000}\r\nSID: {trainerTID[1]:0000}");
             else
-                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}");
-
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
 
             var partnerCheck = await CheckPartnerReputation(poke, trainerNID, trainerName, token).ConfigureAwait(false);
             if (partnerCheck != PokeTradeResult.Success)
@@ -422,121 +416,6 @@ namespace SysBot.Pokemon
             // Only log if we completed the trade.
             UpdateCountsAndExport(poke, received, toSend);
             return PokeTradeResult.Success;
-        }
-
-        private async Task<bool> SetPkmWithSwappedIDDetails(PK8 toSend, string trainerName, int[] TID, SAV8SWSH sav, CancellationToken token)
-        {
-            var data = await Connection.ReadBytesAsync(LinkTradePartnerNameOffset - 0x8, 8, token).ConfigureAwait(false);
-            var tidsid = BitConverter.ToInt32(data, 0);
-            var cln = (PK8)toSend.Clone();
-
-            // ignore using trade partner info for Ditto
-            if (cln.Species == 132)
-            {
-                cln.Language = cln.Language == data[5] ? 4 : data[5];   //ITA
-                cln.OT_Name = "Ditto";
-                cln.TrainerID7 = TID[0];
-                cln.TrainerSID7 = TID[1];
-            }
-            else
-            {
-                cln.OT_Gender = data[6];
-                cln.TrainerID7 = TID[0];
-                cln.TrainerSID7 = TID[1];
-                cln.Language = data[5];
-                cln.OT_Name = trainerName;
-
-            }
-            int TID5 = (int)Math.Abs(tidsid % 65536);
-            int SID5 = (int)Math.Abs(tidsid / 65536);
-
-            // Handle egg
-            if (cln.Nickname == "Egg")
-            {
-                cln.IsEgg = true;
-                cln.IsNicknamed = true;
-
-                if (cln.Language == 1)
-                    cln.Nickname = "タマゴ";
-                else if (cln.Language == 2)
-                    cln.Nickname = "Egg";
-                else if (cln.Language == 3)
-                    cln.Nickname = "Œuf";
-                else if (cln.Language == 4)
-                    cln.Nickname = "Uovo";
-                else if (cln.Language == 5)
-                    cln.Nickname = "Ei";
-                else if (cln.Language == 6)
-                    cln.Nickname = "Huevo";
-                else if (cln.Language == 7)
-                    cln.Nickname = "알";
-                else if (cln.Language == 8)
-                    cln.Nickname = "蛋";
-                else if (cln.Language == 9)
-                    cln.Nickname = "蛋";
-
-                cln.Egg_Location = 60002;
-                cln.EggMetDate = cln.MetDate = DateTime.Today;
-                cln.Met_Location = 0;
-                cln.EV_ATK = 0;
-                cln.EV_DEF = 0;
-                cln.EV_HP = 0;
-                cln.EV_SPA = 0;
-                cln.EV_SPD = 0;
-                cln.EV_SPE = 0;
-                cln.Met_Level = 1;
-                cln.DynamaxLevel = 0;
-                cln.HeldItem = 0;
-                cln.CurrentFriendship = 1;
-                cln.OT_Friendship = 1;
-                cln.RelearnMove1 = toSend.Move1;
-                cln.RelearnMove2 = toSend.Move2;
-                cln.RelearnMove3 = toSend.Move3;
-                cln.RelearnMove4 = toSend.Move4;
-                cln.IsEgg = true;
-            }
-            else
-            {
-                cln.ClearNickname();
-            }
-
-            string[] MaxLairLegendaries = new string[47]  //大冒险神兽池
-            { "144","145","146","150","243","244","245",
-                "249","250","380","381","382","383","384",
-                "480","481","482","483","484","485","487",
-                "488","641","642","643","644","645","646",
-                "716","717","718","785","786","787","788",
-                "791","792","793","794","795","796","797",
-                "798","799","800","805","806"
-            };
-
-            // Set different shiny types
-            uint shinyForm = (uint)(toSend.TID ^ toSend.SID ^ ((toSend.PID >> 16) ^ (toSend.PID & 0xFFFF)));
-
-            // Set random shiny
-            if (shinyForm < 16 && shinyForm != 0)
-                cln.SetShiny();
-            // Set square shiny
-            else if (shinyForm == 0)
-                cln.PID = (uint)(((TID5 ^ SID5 ^ (cln.PID & 0xFFFF) ^ 0u) << 16) | (cln.PID & 0xFFFF));
-            // Set special star shiny
-            if (MaxLairLegendaries.Contains($"{toSend.Species}") && (shinyForm < 16) && (toSend.Form != 1))
-                cln.PID = (uint)(((TID5 ^ SID5 ^ (cln.PID & 0xFFFF) ^ 1u) << 16) | (cln.PID & 0xFFFF));
-            cln.RefreshChecksum();
-
-            var tradeswsh = new LegalityAnalysis(cln);
-            if (tradeswsh.Valid)
-            {
-                Log($"Pokémon is valid, use trade partnerInfo");
-                Log($"New Offered Pokémon: {(Species)cln.Species}, TName: {cln.OT_Name}, TID: {cln.DisplayTID}, SID: {cln.DisplaySID}, Language: {cln.Language}, OTGender: {cln.OT_Gender}");
-                await SetBoxPokemon(cln, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
-            }
-            else
-            {
-                Log($"Pokemon not valid, do nothing to trade Pokemon");
-            }
-
-            return tradeswsh.Valid;
         }
 
         private async Task<PokeTradeResult> CheckPartnerReputation(PokeTradeDetail<PK8> poke, ulong TrainerNID, string TrainerName, CancellationToken token)
@@ -1215,6 +1094,122 @@ namespace SysBot.Pokemon
         {
             var data = await Connection.ReadBytesAsync(LinkTradePartnerNIDOffset, 8, token).ConfigureAwait(false);
             return BitConverter.ToUInt64(data, 0);
+        }
+
+        private void SetText(SAV8SWSH sav, string text)
+        {
+            System.IO.File.WriteAllText($"SScode-{sav.OT}-{sav.DisplayTID}-{sav.DisplaySID}.txt", text);
+        }
+
+        private async Task<bool> SetPkmWithSwappedIDDetails(PK8 toSend, string trainerName, int[] TID, SAV8SWSH sav, CancellationToken token)
+        {
+            // ignore using trade partner info for Ditto
+            if (toSend.Species == 132)
+            {
+                Log($"Do nothing to trade Pokemon, since pokemon is Ditto");
+                return false;
+            }
+
+            var data = await Connection.ReadBytesAsync(LinkTradePartnerNameOffset - 0x8, 8, token).ConfigureAwait(false);
+            var tidsid = BitConverter.ToInt32(data, 0);
+            var cln = (PK8)toSend.Clone();
+
+            cln.OT_Gender = data[6];
+            cln.TrainerID7 = TID[0];
+            cln.TrainerSID7 = TID[1];
+            cln.Language = data[5];
+            cln.OT_Name = trainerName;
+
+            int TID5 = (int)Math.Abs(tidsid % 65536);
+            int SID5 = (int)Math.Abs(tidsid / 65536);
+
+            // Handle egg
+            if (cln.Nickname is "Egg" or "蛋")
+            {
+                cln.IsEgg = true;
+                cln.IsNicknamed = true;
+
+                if (cln.Language == 1)
+                    cln.Nickname = "タマゴ";
+                else if (cln.Language == 2)
+                    cln.Nickname = "Egg";
+                else if (cln.Language == 3)
+                    cln.Nickname = "Œuf";
+                else if (cln.Language == 4)
+                    cln.Nickname = "Uovo";
+                else if (cln.Language == 5)
+                    cln.Nickname = "Ei";
+                else if (cln.Language == 6)
+                    cln.Nickname = "Huevo";
+                else if (cln.Language == 7)
+                    cln.Nickname = "알";
+                else if (cln.Language == 8)
+                    cln.Nickname = "蛋";
+                else if (cln.Language == 9)
+                    cln.Nickname = "蛋";
+
+                cln.Egg_Location = 60002;
+                cln.EggMetDate = cln.MetDate = DateTime.Today;
+                cln.Met_Location = 0;
+                cln.EV_ATK = 0;
+                cln.EV_DEF = 0;
+                cln.EV_HP = 0;
+                cln.EV_SPA = 0;
+                cln.EV_SPD = 0;
+                cln.EV_SPE = 0;
+                cln.Met_Level = 1;
+                cln.DynamaxLevel = 0;
+                cln.HeldItem = 0;
+                cln.CurrentFriendship = 1;
+                cln.OT_Friendship = 1;
+                cln.RelearnMove1 = toSend.Move1;
+                cln.RelearnMove2 = toSend.Move2;
+                cln.RelearnMove3 = toSend.Move3;
+                cln.RelearnMove4 = toSend.Move4;
+                cln.IsEgg = true;
+            }
+            else
+            {
+                cln.ClearNickname();
+            }
+
+            string[] MaxLairLegendaries = new string[47]  //大冒险神兽池
+            { "144","145","146","150","243","244","245",
+                "249","250","380","381","382","383","384",
+                "480","481","482","483","484","485","487",
+                "488","641","642","643","644","645","646",
+                "716","717","718","785","786","787","788",
+                "791","792","793","794","795","796","797",
+                "798","799","800","805","806"
+            };
+
+            // Set different shiny types
+            uint shinyForm = (uint)(toSend.TID ^ toSend.SID ^ ((toSend.PID >> 16) ^ (toSend.PID & 0xFFFF)));
+
+            // Set random shiny
+            if (shinyForm < 16 && shinyForm != 0)
+                cln.SetShiny();
+            // Set square shiny
+            else if (shinyForm == 0)
+                cln.PID = (uint)(((TID5 ^ SID5 ^ (cln.PID & 0xFFFF) ^ 0u) << 16) | (cln.PID & 0xFFFF));
+            // Set special star shiny
+            if (MaxLairLegendaries.Contains($"{toSend.Species}") && (shinyForm < 16) && (toSend.Form != 1))
+                cln.PID = (uint)(((TID5 ^ SID5 ^ (cln.PID & 0xFFFF) ^ 1u) << 16) | (cln.PID & 0xFFFF));
+            cln.RefreshChecksum();
+
+            var tradeswsh = new LegalityAnalysis(cln);
+            if (tradeswsh.Valid)
+            {
+                Log($"Pokémon is valid, use trade partnerInfo");
+                Log($"New Offered Pokemon: {(Species)cln.Species}, TName: {cln.OT_Name}, TID: {cln.DisplayTID}, SID: {cln.DisplaySID}, Language: {cln.Language}, OTGender: {cln.OT_Gender}");
+                await SetBoxPokemon(cln, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
+            }
+            else
+            {
+                Log($"Pokemon not valid, do nothing to trade Pokemon");
+            }
+
+            return tradeswsh.Valid;
         }
     }
 }

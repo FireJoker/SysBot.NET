@@ -217,13 +217,13 @@ namespace SysBot.Pokemon
             }
         }
 
-        private void SetText(SAV8LA sav, string text)
-        {
-            System.IO.File.WriteAllText($"LAcode{sav.OT}-{sav.DisplayTID}-{sav.DisplaySID}.txt", text);
-        }
-
         private async Task<PokeTradeResult> PerformLinkCodeTrade(SAV8LA sav, PokeTradeDetail<PA8> poke, CancellationToken token)
         {
+            if (poke.Type == PokeTradeType.Random)
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}");
+            else
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}");
+            
             // Update Barrier Settings
             UpdateBarrier(poke.IsSynchronized);
             poke.TradeInitialize(this);
@@ -235,11 +235,6 @@ namespace SysBot.Pokemon
             var toSend = poke.TradeData;
             if (toSend.Species != 0)
                 await SetBoxPokemonAbsolute(BoxStartOffset, toSend, token, sav).ConfigureAwait(false);
-
-            if (poke.Type == PokeTradeType.Random)
-                SetText(sav, $"连接密码: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[toSend.Species]}");
-            else
-                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}");
 
             if (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
             {
@@ -295,12 +290,10 @@ namespace SysBot.Pokemon
 
             RecordUtil<PokeTradeBot>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.TrainerName}\t{poke.Trainer.TrainerName}\t{ShowdownTranslator<PA8>.GameStringsZh.Species[toSend.Species]}");
             Log($"Found trading partner: {tradePartner.TrainerName}-{tradePartner.TID}-{tradePartner.SID} (NID: {trainerNID})");
-
             poke.Notifier.SendNotificationTinfo(this, poke, $"找到训练家: {tradePartner.TrainerName}\nTID(表ID): {tradePartner.TID} \nSID(里ID): {tradePartner.SID}\n等待交换宝可梦");
 
-
             if (poke.Type == PokeTradeType.Random)
-                SetText(sav, $"连接密码: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[toSend.Species]}" +
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[toSend.Species]}" +
                     $"\r\nTID: {tradePartner.TID:000000}\r\nSID: {tradePartner.SID:0000}");
             else
                 SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}");
@@ -841,6 +834,11 @@ namespace SysBot.Pokemon
             Comment = $"Added automatically on {DateTime.Now:yyyy.MM.dd-hh:mm:ss} ({comment})",
         };
 
+        private void SetText(SAV8LA sav, string text)
+        {
+            System.IO.File.WriteAllText($"LAcode{sav.OT}-{sav.DisplayTID}-{sav.DisplaySID}.txt", text);
+        }
+
         // based on https://github.com/Muchacho13Scripts/SysBot.NET/commit/f7879386f33bcdbd95c7a56e7add897273867106
         // and https://github.com/berichan/SysBot.PLA/commit/84042d4716007dc6ff3100ad4be4a483d622ccf8
         private async Task<bool> SetBoxPkmWithSwappedIDDetailsPLA(PA8 toSend, TradePartnerLA tradePartner, SAV8LA sav, CancellationToken token)
@@ -853,7 +851,6 @@ namespace SysBot.Pokemon
             cln.TrainerSID7 = tradePartner.SID7;
             cln.Language = tradePartner.Language;
             cln.OT_Name = tradePartner.TrainerName;
-            cln.OT_Friendship = 255;
 
             cln.ClearNickname();
 

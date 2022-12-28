@@ -213,6 +213,11 @@ namespace SysBot.Pokemon
 
         private async Task<PokeTradeResult> PerformLinkCodeTrade(SAV9SV sav, PokeTradeDetail<PK9> poke, CancellationToken token)
         {
+            if (poke.Type == PokeTradeType.Random)
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+            else
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+
             // Update Barrier Settings
             UpdateBarrier(poke.IsSynchronized);
             poke.TradeInitialize(this);
@@ -314,6 +319,13 @@ namespace SysBot.Pokemon
             var trainerNID = await GetTradePartnerNID(TradePartnerNIDOffset, token).ConfigureAwait(false);
             RecordUtil<PokeTradeBot>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.OT}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
             Log($"Found Link Trade partner: {tradePartner.OT}-{tradePartner.DisplayTID} (ID: {trainerNID})");
+            poke.Notifier.SendNotificationTinfo(this, poke, $"找到训练家: {tradePartner.OT}\nTID(表ID): {tradePartner.DisplayTID:D6)} \nSID(里ID): {tradePartner.DisplaySID:D4)}\n等待交换宝可梦");
+
+            if (poke.Type == PokeTradeType.Random)
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}" +
+                    $"\r\nTID: {tradePartner.DisplayTID:D6)}\r\nSID: {tradePartner.DisplaySID:D4)}");
+            else
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
 
             var partnerCheck = CheckPartnerReputation(poke, trainerNID, tradePartner.OT);
             if (partnerCheck != PokeTradeResult.Success)
@@ -995,6 +1007,11 @@ namespace SysBot.Pokemon
             Comment = $"Added automatically on {DateTime.Now:yyyy.MM.dd-hh:mm:ss} ({comment})",
         };
 
+        private void SetText(SAV9SV sav, string text)
+        {
+            System.IO.File.WriteAllText($"SVcode{sav.OT}-{sav.DisplayTID}-{sav.DisplaySID}.txt", text);
+        }
+
         private async Task<bool> SetBoxPkmWithSwappedIDDetailsSV(PK9 toSend, TradeMyStatus tradePartner, SAV9SV sav, CancellationToken token)
         {
             if (toSend.Species == 132)
@@ -1017,10 +1034,11 @@ namespace SysBot.Pokemon
 
             cln.RefreshChecksum();
 
-            var tradeSV = new LegalityAnalysis(cln);
-            if (tradeSV.Valid)
+            var tradesv = new LegalityAnalysis(cln);
+            if (tradesv.Valid)
             {
                 Log($"Pokemon is valid, use trade partnerInfo");
+                Log($"New Offered Pokemon: {(Species)cln.Species}, TName: {cln.OT_Name}, TID: {cln.DisplayTID}, SID: {cln.DisplaySID}, Language: {cln.Language}, OTGender: {cln.OT_Gender}");
                 await SetBoxPokemonAbsolute(BoxStartOffset, cln, token, sav).ConfigureAwait(false);
             }
             else
@@ -1028,7 +1046,7 @@ namespace SysBot.Pokemon
                 Log($"Pokemon not valid, do nothing to trade Pokemon");
             }
 
-            return tradeSV.Valid;
+            return tradesv.Valid;
         }
     }
 }
