@@ -17,6 +17,9 @@ namespace SysBot.Pokemon
         [Category(TradeConfig), Description("Time to wait for a trade partner in seconds.")]
         public int TradeWaitTime { get; set; } = 30;
 
+        [Category(TradeConfig), Description("Max amount of time in seconds pressing A to wait for a trade to process.")]
+        public int MaxTradeConfirmTime { get; set; } = 25;
+
         [Category(TradeCode), Description("Minimum Link Code.")]
         public int MinTradeCode { get; set; } = 8180;
 
@@ -34,9 +37,6 @@ namespace SysBot.Pokemon
 
         [Category(TradeConfig), Description("When enabled, the screen will be turned off during normal bot loop operation to save power.")]
         public bool ScreenOff { get; set; } = false;
-
-        [Category(TradeConfig), Description("Max amount of time pressing A to wait for a trade to end before trying to exit to overworld.")]
-        public int TradeAnimationMaxDelaySeconds { get; set; } = 90; // 150 maybe
 
         /// <summary>
         /// Gets a random trade code based on the range settings.
@@ -97,7 +97,7 @@ namespace SysBot.Pokemon
 
         public void AddCompletedTrade() => Interlocked.Increment(ref _completedTrades);
         public void AddCompletedSeedCheck() => Interlocked.Increment(ref _completedSeedChecks);
-        public void AddCompletedSurprise() =>Interlocked.Increment(ref _completedSurprise);
+        public void AddCompletedSurprise() => Interlocked.Increment(ref _completedSurprise);
         public void AddCompletedDistribution() => Interlocked.Increment(ref _completedDistribution);
         public void AddCompletedDumps() => Interlocked.Increment(ref _completedDumps);
         public void AddCompletedClones() => Interlocked.Increment(ref _completedClones);
