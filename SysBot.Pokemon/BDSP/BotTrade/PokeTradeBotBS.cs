@@ -56,8 +56,6 @@ namespace SysBot.Pokemon
         private ulong SoftBanOffset;
         private ulong LinkTradePokemonOffset;
 
-        // Count up how many trades we did without rebooting.
-        private int sessionTradeCount;
         // Track the last Pokémon we were offered since it persists between trades.
         private byte[] lastOffered;
 
@@ -229,8 +227,6 @@ namespace SysBot.Pokemon
             else
                 SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
 
-            sessionTradeCount++;
-            Log($"Starting trade #{sessionTradeCount} for this session.");
             // Update Barrier Settings
             UpdateBarrier(poke.IsSynchronized);
             poke.TradeInitialize(this);
@@ -327,7 +323,7 @@ namespace SysBot.Pokemon
                 return PokeTradeResult.SuspiciousActivity;
             }
 
-            await Task.Delay(2_000, token).ConfigureAwait(false);
+            await Task.Delay(2_000 + Hub.Config.Timings.ExtraTimeOpenBox, token).ConfigureAwait(false);
 
             // Confirm Box 1 Slot 1
             //if (poke.Type == PokeTradeType.Specific)
@@ -590,7 +586,6 @@ namespace SysBot.Pokemon
         {
             await ReOpenGame(Hub.Config, token).ConfigureAwait(false);
             await InitializeSessionOffsets(token).ConfigureAwait(false);
-            sessionTradeCount = 0;
         }
 
         private async Task<bool> EnsureOutsideOfUnionRoom(CancellationToken token)
