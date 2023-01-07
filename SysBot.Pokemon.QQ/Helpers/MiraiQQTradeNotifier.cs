@@ -34,7 +34,14 @@ namespace SysBot.Pokemon.QQ
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)
         {
             LogUtil.LogText(message);
-            //SendMessage($"@{info.Trainer.TrainerName}: {message}");
+            if (message.Contains("Found Link Trade partner:"))
+            {
+                message = message.Replace("Found Link Trade partner", "找到初训家");
+                message = message.Replace("TID", "\nTID(表ID)");
+                message = message.Replace("SID", "\nSID(里ID)");
+                message = message.Replace(". Waiting for a Pokémon...", "\n等待交换宝可梦");
+                SendMessage(new AtMessage($"{info.Trainer.ID}").Append(message)); 
+            }
         }
 
         public void SendNotificationTinfo(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)

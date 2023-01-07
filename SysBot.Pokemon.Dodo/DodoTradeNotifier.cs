@@ -3,6 +3,7 @@ using SysBot.Base;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace SysBot.Pokemon.Dodo
 {
@@ -73,11 +74,14 @@ namespace SysBot.Pokemon.Dodo
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)
         {
             LogUtil.LogText(message);
-        }
-
-        public void SendNotificationTinfo(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)
-        {
-            DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), message);
+            if (message.Contains("Found Link Trade partner:"))
+            {
+                message = message.Replace("Found Link Trade partner", "找到初训家");
+                message = message.Replace("TID", "\nTID(表ID)");
+                message = message.Replace("SID", "\nSID(里ID)");
+                message = message.Replace(". Waiting for a Pokémon...", "\n等待交换宝可梦");
+                DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), message);
+            }
         }
 
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, PokeTradeSummary message)

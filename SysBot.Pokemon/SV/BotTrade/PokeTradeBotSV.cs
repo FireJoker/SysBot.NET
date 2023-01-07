@@ -218,9 +218,9 @@ namespace SysBot.Pokemon
         private async Task<PokeTradeResult> PerformLinkCodeTrade(SAV9SV sav, PokeTradeDetail<PK9> poke, CancellationToken token)
         {
             if (poke.Type == PokeTradeType.Random)
-                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {(poke.TradeData.IsShiny ? "异色" : string.Empty)}{GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
             else
-                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {(poke.TradeData.IsShiny ? "异色" : string.Empty)}{GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
 
             // Update Barrier Settings
             UpdateBarrier(poke.IsSynchronized);
@@ -333,14 +333,14 @@ namespace SysBot.Pokemon
             var tradePartner = await GetTradePartnerInfo(token).ConfigureAwait(false);
             var trainerNID = await GetTradePartnerNID(TradePartnerNIDOffset, token).ConfigureAwait(false);
             RecordUtil<PokeTradeBot>.Record($"Initiating\t{trainerNID:X16}\t{tradePartner.OT}\t{poke.Trainer.TrainerName}\t{poke.Trainer.ID}\t{poke.ID}\t{toSend.EncryptionConstant:X8}");
-            Log($"Found Link Trade partner: {tradePartner.OT}-{tradePartner.DisplayTID} (ID: {trainerNID})");
-            poke.Notifier.SendNotificationTinfo(this, poke, $"找到训练家: {tradePartner.OT}\nTID(表ID): {tradePartner.DisplayTID:D6} \nSID(里ID): {tradePartner.DisplaySID:D4}\n等待交换宝可梦");
+            Log($"Found Link Trade partner: {tradePartner.OT}-{tradePartner.DisplayTID}-{tradePartner.DisplaySID} (NID: {trainerNID})");
+            poke.SendNotification(this, $"Found Link Trade partner: {tradePartner.OT} TID: {tradePartner.DisplayTID:D6} SID: {tradePartner.DisplaySID:D4}. Waiting for a Pokémon...");
 
             if (poke.Type == PokeTradeType.Random)
-                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}" +
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {(poke.TradeData.IsShiny ? "异色" : string.Empty)}{GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}" +
                     $"\r\nTID: {tradePartner.DisplayTID:D6)}\r\nSID: {tradePartner.DisplaySID:D4)}");
             else
-                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {(poke.TradeData.IsShiny ? "异色" : string.Empty)}{GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
 
             var partnerCheck = CheckPartnerReputation(poke, trainerNID, tradePartner.OT);
             if (partnerCheck != PokeTradeResult.Success)
@@ -355,14 +355,11 @@ namespace SysBot.Pokemon
                 await SetBoxPkmWithSwappedIDDetailsSV(toSend, tradePartner, sav, token);
             }
 
-            poke.SendNotification(this, $"Found Link Trade partner: {tradePartner.OT}. Waiting for a Pokémon...");
             // Hard check to verify that the offset changed from the last thing offered from the previous trade.
             // This is because box opening times can vary per person, the offset persists between trades, and can also change offset between trades.
             var tradeOffered = await ReadUntilChanged(TradePartnerOfferedOffset, lastOffered, 10_000, 0_500, false, true, token).ConfigureAwait(false);
             if (!tradeOffered)
-                return PokeTradeResult.TrainWasNotFound;
-
-            poke.SendNotification(this, $"Found Link Trade partner: {tradePartner.TrainerName}. Waiting for a Pokémon...");
+                return PokeTradeResult.NoTrainerWasFound;
 
             if (poke.Type == PokeTradeType.Dump)
             {

@@ -222,9 +222,9 @@ namespace SysBot.Pokemon
         private async Task<PokeTradeResult> PerformLinkCodeTrade(SAV8SWSH sav, PokeTradeDetail<PK8> poke, CancellationToken token)
         {
             if (poke.Type == PokeTradeType.Random)
-                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {(poke.TradeData.IsShiny ? "异色" : string.Empty)}{GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
             else
-                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {(poke.TradeData.IsShiny ? "异色" : string.Empty)}{GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
 
             // Update Barrier Settings
             UpdateBarrier(poke.IsSynchronized);
@@ -319,15 +319,14 @@ namespace SysBot.Pokemon
             var trainerTID = await GetTradePartnerTID7(TradeMethod.LinkTrade, token).ConfigureAwait(false);
             var trainerNID = await GetTradePartnerNID(token).ConfigureAwait(false);
             RecordUtil<PokeTradeBot>.Record($"Initiating\t{trainerNID:X16}\t{trainerName}\t{poke.Trainer.TrainerName}\t{GameInfo.GetStrings(7).Species[toSend.Species]}");
-            Log($"Found Link Trade partner: {trainerName}-{trainerTID[0]}-{trainerTID[1]} (ID: {trainerNID})");
+            Log($"Found Link Trade partner: {trainerName}-{trainerTID[0]}-{trainerTID[1]} (NID: {trainerNID})");
+            poke.SendNotification(this, $"Found Link Trade partner: {trainerName} TID: {trainerTID[0]} SID: {trainerTID[1]}. Waiting for a Pokémon...");
 
-            poke.Notifier.SendNotificationTinfo(this, poke, $"找到训练家: {trainerName}\nTID(表ID): {trainerTID[0]} \nSID(里ID): {trainerTID[1]}\n等待交换宝可梦");
-            
             if (poke.Type == PokeTradeType.Random)
-                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}" +
-                    $"\r\nTID: {trainerTID[0]:000000}\r\nSID: {trainerTID[1]:0000}");
+                SetText(sav, $"连接密语: {poke.Code:0000 0000}\r\n正在派送: {(poke.TradeData.IsShiny ? "异色" : string.Empty)}{GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}" +
+                    $"\r\nTID: {trainerTID[0]:D6}\r\nSID: {trainerTID[1]:D4}");
             else
-                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
+                SetText(sav, $"发送需求: {poke.Trainer.TrainerName}\r\n正在派送: {(poke.TradeData.IsShiny ? "异色" : string.Empty)}{GameInfo.GetStrings(7).Species[poke.TradeData.Species]}{(poke.TradeData.IsEgg ? "(蛋)" : string.Empty)}");
 
             var partnerCheck = await CheckPartnerReputation(poke, trainerNID, trainerName, token).ConfigureAwait(false);
             if (partnerCheck != PokeTradeResult.Success)
@@ -353,8 +352,6 @@ namespace SysBot.Pokemon
                 for (int i = 0; i < 5; i++)
                     await Click(A, 0_500, token).ConfigureAwait(false);
             }
-
-            poke.SendNotification(this, $"Found Link Trade partner: {trainerName}. Waiting for a Pokémon...");
 
             if (poke.Type == PokeTradeType.Dump)
                 return await ProcessDumpTradeAsync(poke, token).ConfigureAwait(false);

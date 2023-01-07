@@ -16,8 +16,6 @@ namespace SysBot.Pokemon
 
         /// <summary> Sends a notification when called with parameters. </summary>
         void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message);
-        /// <summary> Sends a notification when found parameters. </summary>
-        void SendNotificationTinfo(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message);
         /// <summary> Sends a notification when called with parameters. </summary>
         void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, PokeTradeSummary message);
         /// <summary> Sends a notification when called with parameters. </summary>
