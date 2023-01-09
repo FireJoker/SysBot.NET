@@ -1124,49 +1124,20 @@ namespace SysBot.Pokemon
             int SID5 = (int)Math.Abs(tidsid / 65536);
 
             // Handle egg
-            if (cln.Nickname is "Egg" or "蛋")
+            if (toSend.IsEgg == true)
             {
-                cln.IsEgg = true;
                 cln.IsNicknamed = true;
-
-                if (cln.Language == 1)
-                    cln.Nickname = "タマゴ";
-                else if (cln.Language == 2)
-                    cln.Nickname = "Egg";
-                else if (cln.Language == 3)
-                    cln.Nickname = "Œuf";
-                else if (cln.Language == 4)
-                    cln.Nickname = "Uovo";
-                else if (cln.Language == 5)
-                    cln.Nickname = "Ei";
-                else if (cln.Language == 6)
-                    cln.Nickname = "Huevo";
-                else if (cln.Language == 7)
-                    cln.Nickname = "알";
-                else if (cln.Language == 8)
-                    cln.Nickname = "蛋";
-                else if (cln.Language == 9)
-                    cln.Nickname = "蛋";
-
-                cln.Egg_Location = 60002;
-                cln.EggMetDate = cln.MetDate = DateTime.Today;
-                cln.Met_Location = 0;
-                cln.EV_ATK = 0;
-                cln.EV_DEF = 0;
-                cln.EV_HP = 0;
-                cln.EV_SPA = 0;
-                cln.EV_SPD = 0;
-                cln.EV_SPE = 0;
-                cln.Met_Level = 1;
-                cln.DynamaxLevel = 0;
-                cln.HeldItem = 0;
-                cln.CurrentFriendship = 1;
-                cln.OT_Friendship = 1;
-                cln.RelearnMove1 = toSend.Move1;
-                cln.RelearnMove2 = toSend.Move2;
-                cln.RelearnMove3 = toSend.Move3;
-                cln.RelearnMove4 = toSend.Move4;
-                cln.IsEgg = true;
+                cln.Nickname = data[5] switch
+                {
+                    1 => "タマゴ",
+                    3 => "Œuf",
+                    4 => "Uovo",
+                    5 => "Ei",
+                    7 => "Huevo",
+                    8 => "알",
+                    9 or 10 => "蛋",
+                    _ => "Egg",
+                };
             }
             else
             {

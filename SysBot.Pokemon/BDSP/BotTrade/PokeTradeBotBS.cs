@@ -937,53 +937,27 @@ namespace SysBot.Pokemon
             cln.TrainerSID7 = tradePartner.SID7;
             cln.Language = offered.Language;
             cln.OT_Name = tradePartner.TrainerName;
-            
-            if (cln.Nickname is "Egg" or "蛋")
+
+            // Handle egg
+            if (toSend.IsEgg == true)
             {
-                cln.IsEgg = true;
                 cln.IsNicknamed = true;
-
-                if (cln.Language == 1)
-                    cln.Nickname = "タマゴ";
-                else if (cln.Language == 2)
-                    cln.Nickname = "Egg";
-                else if (cln.Language == 3)
-                    cln.Nickname = "Œuf";
-                else if (cln.Language == 4)
-                    cln.Nickname = "Uovo";
-                else if (cln.Language == 5)
-                    cln.Nickname = "Ei";
-                else if (cln.Language == 6)
-                    cln.Nickname = "Huevo";
-                else if (cln.Language == 7)
-                    cln.Nickname = "알";
-                else if (cln.Language == 8)
-                    cln.Nickname = "蛋";
-                else if (cln.Language == 9)
-                    cln.Nickname = "蛋";
-
-                if (cln.Species != 490)
-                    cln.Egg_Location = 60010;
-                if (cln.Species == 490)
-                    cln.Egg_Location = 40001;
-
-                cln.EggMetDate = cln.MetDate = DateTime.Today;
-                cln.Met_Location = 0;
-                cln.EV_ATK = 0;
-                cln.EV_DEF = 0;
-                cln.EV_HP = 0;
-                cln.EV_SPA = 0;
-                cln.EV_SPD = 0;
-                cln.EV_SPE = 0;
-                cln.Met_Level = 1;
-                cln.HeldItem = 0;
-                cln.CurrentFriendship = 1;
-                cln.OT_Friendship = 1;
-                cln.IsEgg = true;
+                cln.Nickname = offered.Language switch
+                {
+                    1 => "タマゴ",
+                    3 => "Œuf",
+                    4 => "Uovo",
+                    5 => "Ei",
+                    7 => "Huevo",
+                    8 => "알",
+                    9 or 10 => "蛋",
+                    _ => "Egg",
+                };
             }
-
-            if (cln.IsEgg == false)
+            else
+            {
                 cln.ClearNickname();
+            }
 
             if (toSend.IsShiny)
                 cln.SetShiny();

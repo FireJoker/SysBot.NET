@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
+using System.Collections.Generic;
 
 namespace SysBot.Pokemon
 {
@@ -1040,7 +1041,7 @@ namespace SysBot.Pokemon
 
         private async Task<bool> SetBoxPkmWithSwappedIDDetailsSV(PK9 toSend, TradeMyStatus tradePartner, SAV9SV sav, CancellationToken token)
         {
-            if (toSend.Species == 132)
+            if (toSend.Species == (ushort)Species.Ditto)
             {
                 Log($"Do nothing to trade Pokemon, since pokemon is Ditto");
                 return false;
@@ -1052,8 +1053,45 @@ namespace SysBot.Pokemon
             cln.TrainerSID7 = (int)Math.Abs(tradePartner.DisplaySID);
             cln.Language = tradePartner.Language;
             cln.OT_Name = tradePartner.OT;
-            cln.Version = tradePartner.Game;
-            cln.ClearNickname();
+            //cln.Version = tradePartner.Game;
+            //cln.ClearNickname();
+
+            if (toSend.IsEgg == false)
+            {
+                // Handle Koraidon/Miraidon
+                if (toSend.Species == (ushort)Species.Koraidon)
+                {
+                    cln.Version = 50;
+                    Log($"Sending Koraidon，force game version as Scarlet");
+
+                }
+                else if (toSend.Species == (ushort)Species.Miraidon)
+                {
+                    cln.Version = 51;
+                    Log($"Sending Miraidon，force game version as Violet");
+                }
+                else
+                {
+                    cln.Version = tradePartner.Game;
+                }
+                cln.ClearNickname();
+            }
+            else // Handle egg
+            {
+                cln.IsNicknamed = true;
+                cln.Nickname = tradePartner.Language switch
+                {
+                    1 => "タマゴ",
+                    3 => "Œuf",
+                    4 => "Uovo",
+                    5 => "Ei",
+                    7 => "Huevo",
+                    8 => "알",
+                    9 or 10 => "蛋",
+                    _ => "Egg",
+                };
+                Log($"Sending Egg, change nickname as egg based on language");
+            }
 
             if (toSend.IsShiny)
                 cln.SetShiny();
@@ -1063,7 +1101,7 @@ namespace SysBot.Pokemon
             var tradesv = new LegalityAnalysis(cln);
             if (tradesv.Valid)
             {
-                Log($"Pokemon is valid, use trade partnerInfo");
+                Log($"Pokemon is valid, use trade partner info");
                 Log($"New Offered Pokemon: {(Species)cln.Species}, TName: {cln.OT_Name}, TID: {cln.DisplayTID}, SID: {cln.DisplaySID}, Language: {cln.Language}, OTGender: {cln.OT_Gender}");
                 await SetBoxPokemonAbsolute(BoxStartOffset, cln, token, sav).ConfigureAwait(false);
             }
@@ -1071,7 +1109,6 @@ namespace SysBot.Pokemon
             {
                 Log($"Pokemon not valid, do nothing to trade Pokemon");
             }
-
             return tradesv.Valid;
         }
     }
