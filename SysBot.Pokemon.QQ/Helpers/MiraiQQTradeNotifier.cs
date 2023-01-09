@@ -36,11 +36,12 @@ namespace SysBot.Pokemon.QQ
             LogUtil.LogText(message);
             if (message.Contains("Found Link Trade partner:"))
             {
-                message = message.Replace("Found Link Trade partner", "找到初训家");
-                message = message.Replace("TID", "\nTID(表ID)");
-                message = message.Replace("SID", "\nSID(里ID)");
-                message = message.Replace(". Waiting for a Pokémon...", "\n等待交换宝可梦");
-                SendMessage(new AtMessage($"{info.Trainer.ID}").Append(message)); 
+                var splitTotal = message.Split(' ');
+                var OT = splitTotal[4];
+                var TID = splitTotal[6];
+                var SID = splitTotal[8].Split('.')[0];
+                SendMessage(new AtMessage($"{info.Trainer.ID}").Append(
+                    $"找到初训家：{OT}\nTID(表ID)：{TID}\nSID(里ID)：{SID}\n等待交换宝可梦"));
             }
         }
 
