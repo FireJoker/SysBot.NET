@@ -1,4 +1,5 @@
 ﻿using PKHeX.Core;
+using SixLabors.ImageSharp;
 using System.Text.RegularExpressions;
 
 namespace SysBot.Pokemon
@@ -14,7 +15,7 @@ namespace SysBot.Pokemon
             // 添加宝可梦
             int candidateSpecieNo = 0;
             int candidateSpecieStringLength = 0;
-            for (int i = 0; i < GameStringsZh.Species.Count; i++)
+            for (int i = 1; i < GameStringsZh.Species.Count; i++)
             {
                 if (zh.Contains(GameStringsZh.Species[i]) && GameStringsZh.Species[i].Length > candidateSpecieStringLength)
                 {
@@ -23,67 +24,147 @@ namespace SysBot.Pokemon
                 }
             }
 
-            if (candidateSpecieNo > 0)
+            // 识别蛋
+            if (zh.Contains("的蛋"))
             {
-                if (candidateSpecieNo == 29) result = "Nidoran-F";
-                else if (candidateSpecieNo == 32) result = "Nidoran-M";
-                else result += GameStringsEn.Species[candidateSpecieNo];
+                result += "Egg ";
+                zh = zh.Replace("的蛋", "");
 
-                zh = zh.Replace(GameStringsZh.Species[candidateSpecieNo], "");
-
-                // 特殊性别差异
-                // 29-尼多兰F，32-尼多朗M，678-超能妙喵，876-爱管侍，902-幽尾玄鱼, 916-飘香豚
-                if ((candidateSpecieNo is 678 or 876 or 902 or 916) && zh.Contains("母")) result += "-F";
-            }
-            else
-            {
-                return result;
-            }
-
-            // 识别未知图腾
-            if (Regex.IsMatch(zh, "[A-Z?!？！]形态"))
-            {
-                string formsUnown = Regex.Match(zh, "([A-Z?!？！])形态").Groups?[1]?.Value ?? "";
-                if (formsUnown == "？") formsUnown = "?";
-                else if (formsUnown == "！") formsUnown = "!";
-                result += $"-{formsUnown}";
-                zh = Regex.Replace(zh, "[A-Z?!？！]形态", "");
-            }
-
-            // 识别地区形态
-            if (zh.Contains("帕底亚的样子火形态"))
-            {
-                result += $"-Paldea-Fire";
-                zh = zh.Replace("帕底亚的样子火形态", "");
-            } 
-            else if (zh.Contains("帕底亚的样子水形态"))
-            {
-                result += $"-Paldea-Water";
-                zh = zh.Replace("帕底亚的样子水形态", "");
-            } 
-            else if (zh.Contains("四只家庭"))
-            {
-                result += $"-Four";
-                zh = zh.Replace("四只家庭", "");
-            }
-            else
-            {
-                for (int i = 0; i < GameStringsZh.forms.Length; i++)
+                if (candidateSpecieNo > 0)
                 {
-                    if (GameStringsZh.forms[i].Length == 0) continue;
-                    if (!zh.Contains(GameStringsZh.forms[i] + "形态")) continue;
-                    result += $"-{GameStringsEn.forms[i]}";
-                    zh = zh.Replace(GameStringsZh.forms[i] + "形态", "");
-                    break;
+                    if (candidateSpecieNo == 29) result = "(Nidoran-F)";
+                    else if (candidateSpecieNo == 32) result = "(Nidoran-M)";
+                    zh = zh.Replace(GameStringsZh.Species[candidateSpecieNo], "");
+
+                    // 特殊性别差异
+                    // 29-尼多兰F，32-尼多朗M，876-爱管侍
+                    if ((candidateSpecieNo is 678 or 876) && zh.Contains("母")) result += $"({GameStringsEn.Species[candidateSpecieNo]}-F)";
+                    else if (zh.Contains("帕底亚的样子（火）形态") && candidateSpecieNo is 128)
+                    {
+                        result += $"({GameStringsEn.Species[candidateSpecieNo]}-Paldea-Fire)";
+                        zh = zh.Replace("帕底亚的样子（火）形态", "");
+                    }
+                    else if (zh.Contains("帕底亚的样子（水）形态") && candidateSpecieNo is 128)
+                    {
+                        result += $"({GameStringsEn.Species[candidateSpecieNo]}-Paldea-Water)";
+                        zh = zh.Replace("帕底亚的样子（水）形态", "");
+                    }
+                    else if (zh.Contains("形态"))
+                    {
+                        for (int i = 0; i < GameStringsZh.forms.Length; i++)
+                        {
+                            if (GameStringsZh.forms[i].Length == 0) continue;
+                            if (!zh.Contains(GameStringsZh.forms[i] + "形态")) continue;
+                            result += $"({GameStringsEn.Species[candidateSpecieNo]}-{GameStringsEn.forms[i]})";
+                            zh = zh.Replace(GameStringsZh.forms[i] + "形态", "");
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        result += $"({GameStringsEn.Species[candidateSpecieNo]})";
+                    }
+                    zh = zh.Replace(GameStringsZh.Species[candidateSpecieNo], "");
+                }
+            }
+            else
+            {
+                if (candidateSpecieNo > 0)
+                {
+                    if (candidateSpecieNo == 29) result = "Nidoran-F";
+                    else if (candidateSpecieNo == 32) result = "Nidoran-M";
+                    else result += GameStringsEn.Species[candidateSpecieNo];
+
+                    zh = zh.Replace(GameStringsZh.Species[candidateSpecieNo], "");
+
+                    // 特殊性别差异
+                    // 29-尼多兰F，32-尼多朗M，678-超能妙喵，876-爱管侍，902-幽尾玄鱼, 916-飘香豚
+                    if ((candidateSpecieNo is 678 or 876 or 902 or 916) && zh.Contains("母")) result += "-F";
+                }
+                else
+                {
+                    return result;
+                }
+
+                if (candidateSpecieNo == (ushort)Species.Unown) // 识别未知图腾
+                {
+                    if (Regex.IsMatch(zh, "[A-Z?!？！]形态"))
+                    {
+                        string formsUnown = Regex.Match(zh, "([A-Z?!？！])形态").Groups?[1]?.Value ?? "";
+                        if (formsUnown == "？") formsUnown = "?";
+                        else if (formsUnown == "！") formsUnown = "!";
+                        result += $"-{formsUnown}";
+                        zh = Regex.Replace(zh, "[A-Z?!？！]形态", "");
+                    }
+                }
+                else if (candidateSpecieNo == (ushort)Species.Tauros) // 识别肯泰罗地区形态
+                {
+                    if (zh.Contains("帕底亚的样子（火）形态"))
+                    {
+                        result += $"-Paldea-Fire";
+                        zh = zh.Replace("帕底亚的样子（火）形态", "");
+                    }
+                    else if (zh.Contains("帕底亚的样子（水）形态"))
+                    {
+                        result += $"-Paldea-Water";
+                        zh = zh.Replace("帕底亚的样子（水）形态", "");
+                    }
+                }
+                else if (candidateSpecieNo == (ushort)Species.Rotom) // 识别洛托姆形态
+                {
+                    if (zh.Contains("加热形态"))
+                    {
+                        result += $"-Heat";
+                        zh = zh.Replace("加热形态", "");
+                    }
+                    else if (zh.Contains("清洗形态"))
+                    {
+                        result += $"-Wash";
+                        zh = zh.Replace("清洗形态", "");
+                    }
+                    else if (zh.Contains("结冰形态"))
+                    {
+                        result += $"-Frost";
+                        zh = zh.Replace("结冰形态", "");
+                    }
+                    else if (zh.Contains("旋转形态"))
+                    {
+                        result += $"-Fan";
+                        zh = zh.Replace("旋转形态", "");
+                    }
+                    else if (zh.Contains("切割形态"))
+                    {
+                        result += $"-Mow";
+                        zh = zh.Replace("切割形态", "");
+                    }
+                }
+                else if (candidateSpecieNo == (ushort)Species.Maushold) // 识别一家鼠四只家庭形态
+                {
+                    if (zh.Contains("四只家庭"))
+                    {
+                        result += $"-Four";
+                        zh = zh.Replace("四只家庭", "");
+                    }
+                }
+                else if (zh.Contains("形态"))// 识别地区形态
+                {
+                    for (int i = 0; i < GameStringsZh.forms.Length; i++)
+                    {
+                        if (GameStringsZh.forms[i].Length == 0) continue;
+                        if (!zh.Contains(GameStringsZh.forms[i] + "形态")) continue;
+                        result += $"-{GameStringsEn.forms[i]}";
+                        zh = zh.Replace(GameStringsZh.forms[i] + "形态", "");
+                        break;
+                    }
                 }
             }
 
-            // 处理蛋
-             if (zh.Contains("的蛋"))
-            {
-                result = "Egg (" + result + ")";
-                zh = zh.Replace("的蛋", "");
-            }
+            // 识别宝可梦来源
+            EncounterMovesetGenerator.PriorityList = zh.Contains("野生") ?
+                new EncounterOrder[]
+                { EncounterOrder.Slot, EncounterOrder.Static, EncounterOrder.Mystery, EncounterOrder.Trade, EncounterOrder.Egg, } :
+                new EncounterOrder[]
+                { EncounterOrder.Egg, EncounterOrder.Static, EncounterOrder.Trade, EncounterOrder.Slot, EncounterOrder.Mystery, };
 
             // 添加性别
             if (zh.Contains("公"))
@@ -100,7 +181,7 @@ namespace SysBot.Pokemon
             // 添加持有物
             if (zh.Contains("持有"))
             {
-                for (int i = 0; i < GameStringsZh.Item.Count; i++)
+                for (int i = 1; i < GameStringsZh.Item.Count; i++)
                 {
                     if (GameStringsZh.Item[i].Length == 0) continue;
                     if (!zh.Contains("持有" + GameStringsZh.Item[i])) continue;
@@ -111,7 +192,7 @@ namespace SysBot.Pokemon
             }
             else if (zh.Contains("携带"))
             {
-                for (int i = 0; i < GameStringsZh.Item.Count; i++)
+                for (int i = 1; i < GameStringsZh.Item.Count; i++)
                 {
                     if (GameStringsZh.Item[i].Length == 0) continue;
                     if (!zh.Contains("携带" + GameStringsZh.Item[i])) continue;
@@ -158,6 +239,12 @@ namespace SysBot.Pokemon
                 zh = zh.Replace("方闪", "");
             }
 
+            if (zh.Contains("异国"))
+            {
+                result += "\nLanguage: Italian";
+                zh = zh.Replace("异国", "");
+            }
+
             // 添加头目
             if (typeof(T) == typeof(PA8) && zh.Contains("头目"))
             {
@@ -166,7 +253,7 @@ namespace SysBot.Pokemon
             }
 
             // 添加球种
-            for (int i = 0; i < GameStringsZh.balllist.Length; i++)
+            for (int i = 1; i < GameStringsZh.balllist.Length; i++)
             {
                 if (GameStringsZh.balllist[i].Length == 0) continue;
                 if (!zh.Contains(GameStringsZh.balllist[i])) continue;
@@ -178,7 +265,7 @@ namespace SysBot.Pokemon
             }
 
             // 添加特性
-            for (int i = 0; i < GameStringsZh.Ability.Count; i++)
+            for (int i = 1; i < GameStringsZh.Ability.Count; i++)
             {
                 if (GameStringsZh.Ability[i].Length == 0) continue;
                 if (!zh.Contains(GameStringsZh.Ability[i] + "特性")) continue;
@@ -198,25 +285,25 @@ namespace SysBot.Pokemon
             }
 
             // 添加个体值
-            if (zh.ToUpper().Contains("6V"))
+            if (zh.ToUpper().Contains("6V")) //默认
             {
                 result += "\nIVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe";
-                zh = zh.Replace("6V", "");
+                zh = Regex.Replace(zh, "6V|6v", "");
             }
             else if (zh.ToUpper().Contains("5V0A"))
             {
                 result += "\nIVs: 31 HP / 0 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe";
-                zh = zh.Replace("5V0A", "");
+                zh = Regex.Replace(zh, "5V0A|5v0a", "");
             }
             else if (zh.ToUpper().Contains("5V0S"))
             {
                 result += "\nIVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 0 Spe";
-                zh = zh.Replace("5V0S", "");
+                zh = Regex.Replace(zh, "5V0S|5v0s", "");
             }
             else if (zh.ToUpper().Contains("4V0A0S"))
             {
                 result += "\nIVs: 31 HP / 0 Atk / 31 Def / 31 SpA / 31 SpD / 0 Spe";
-                zh = zh.Replace("4V0A0S", "");
+                zh = Regex.Replace(zh, "4V0A0S|4v0a0s", "");
             }
 
             // 添加努力值
@@ -317,6 +404,94 @@ namespace SysBot.Pokemon
                     zh = zh.Replace("太晶" + GameStringsZh.Types[i], "");
                     break;
                 }
+            }
+
+            // 添加体型大小
+            if (zh.Contains("最大"))
+            {
+                result += "\n.HeightScalar=255\n.WeightScalar=255\n.Scale=255";
+                zh = zh.Replace("最大", "");
+            }
+            else if (zh.Contains("最小"))
+            {
+                result += "\n.HeightScalar=0\n.WeightScalar=0\n.Scale=0";
+                zh = zh.Replace("最小", "");
+            }
+
+            // 添加奖章
+            if (typeof(T) == typeof(PK9))
+            {
+                if (zh.Contains("全证章"))
+                {
+                    result += "\n.Ribbons=$suggestAll\n.RibbonMarkPartner=True\n.RibbonMarkGourmand=True";
+                    zh = zh.Replace("全证章", "");
+                }
+
+                if (zh.Contains("未知之证")) { result += "\n.RibbonMarkRare=True"; }
+                else if (zh.Contains("命运之证")) { result += "\n.RibbonMarkDestiny=True"; }
+                else if (zh.Contains("暴雪之证")) { result += "\n.RibbonMarkBlizzard=True"; }
+                else if (zh.Contains("阴云之证")) { result += "\n.RibbonMarkCloudy=True"; }
+                else if (zh.Contains("正午之证")) { result += "\n.RibbonMarkLunchtime=True"; }
+                else if (zh.Contains("浓雾之证")) { result += "\n.RibbonMarkMisty=True"; }
+                else if (zh.Contains("降雨之证")) { result += "\n.RibbonMarkRainy=True"; }
+                else if (zh.Contains("沙尘之证")) { result += "\n.RibbonMarkSandstorm=True"; }
+                else if (zh.Contains("午夜之证")) { result += "\n.RibbonMarkSleepyTime=True"; }
+                else if (zh.Contains("降雪之证")) { result += "\n.RibbonMarkSnowy=True"; }
+                else if (zh.Contains("落雷之证")) { result += "\n.RibbonMarkStormy=True"; }
+                else if (zh.Contains("干燥之证")) { result += "\n.RibbonMarkDry=True"; }
+                else if (zh.Contains("黄昏之证")) { result += "\n.RibbonMarkDusk=True"; }
+                else if (zh.Contains("拂晓之证")) { result += "\n.RibbonMarkDawn=True"; }
+                else if (zh.Contains("上钩之证")) { result += "\n.RibbonMarkFishing=True"; }
+                else if (zh.Contains("咖喱之证")) { result += "\n.RibbonMarkCurry=True"; }
+                else if (zh.Contains("无虑之证")) { result += "\n.RibbonMarkAbsentMinded=True"; }
+                else if (zh.Contains("愤怒之证")) { result += "\n.RibbonMarkAngry=True"; }
+                else if (zh.Contains("冷静之证")) { result += "\n.RibbonMarkCalmness=True"; }
+                else if (zh.Contains("领袖之证")) { result += "\n.RibbonMarkCharismatic=True"; }
+                else if (zh.Contains("狡猾之证")) { result += "\n.RibbonMarkCrafty=True"; }
+                else if (zh.Contains("期待之证")) { result += "\n.RibbonMarkExcited=True"; }
+                else if (zh.Contains("本能之证")) { result += "\n.RibbonMarkFerocious=True"; }
+                else if (zh.Contains("动摇之证")) { result += "\n.RibbonMarkFlustered=True"; }
+                else if (zh.Contains("木讷之证")) { result += "\n.RibbonMarkHumble=True"; }
+                else if (zh.Contains("理性之证")) { result += "\n.RibbonMarkIntellectual=True"; }
+                else if (zh.Contains("热情之证")) { result += "\n.RibbonMarkIntense=True"; }
+                else if (zh.Contains("捡拾之证")) { result += "\n.RibbonMarkItemfinder=True"; }
+                else if (zh.Contains("紧张之证")) { result += "\n.RibbonMarkJittery=True"; }
+                else if (zh.Contains("幸福之证")) { result += "\n.RibbonMarkJoyful=True"; }
+                else if (zh.Contains("优雅之证")) { result += "\n.RibbonMarkKindly=True"; }
+                else if (zh.Contains("激动之证")) { result += "\n.RibbonMarkPeeved=True"; }
+                else if (zh.Contains("自信之证")) { result += "\n.RibbonMarkPrideful=True"; }
+                else if (zh.Contains("昂扬之证")) { result += "\n.RibbonMarkPumpedUp=True"; }
+                else if (zh.Contains("未知之证")) { result += "\n.RibbonMarkRare=True"; }
+                else if (zh.Contains("淘气之证")) { result += "\n.RibbonMarkRowdy=True"; }
+                else if (zh.Contains("凶悍之证")) { result += "\n.RibbonMarkScowling=True"; }
+                else if (zh.Contains("不振之证")) { result += "\n.RibbonMarkSlump=True"; }
+                else if (zh.Contains("微笑之证")) { result += "\n.RibbonMarkSmiley=True"; }
+                else if (zh.Contains("悲伤之证")) { result += "\n.RibbonMarkTeary=True"; }
+                else if (zh.Contains("不纯之证")) { result += "\n.RibbonMarkThorny=True"; }
+                else if (zh.Contains("偶遇之证")) { result += "\n.RibbonMarkUncommon=True"; }
+                else if (zh.Contains("自卑之证")) { result += "\n.RibbonMarkUnsure=True"; }
+                else if (zh.Contains("爽快之证")) { result += "\n.RibbonMarkUpbeat=True"; }
+                else if (zh.Contains("活力之证")) { result += "\n.RibbonMarkVigor=True"; }
+                else if (zh.Contains("倦怠之证")) { result += "\n.RibbonMarkZeroEnergy=True"; }
+                else if (zh.Contains("疏忽之证")) { result += "\n.RibbonMarkZonedOut=True"; }
+                else if (zh.Contains("宝主之证")) { result += "\n.RibbonMarkTitan=True"; }
+
+                if (zh.Contains("大个子之证")) { result += "\n.Scale=255\n.RibbonMarkJumbo=True"; }
+                else if (zh.Contains("小个子之证")) { result += "\n.Scale=0\n.RibbonMarkMini=True"; }
+            }
+       
+            //添加全技能机(不支持BDSP)
+            if(zh.Contains("全技能"))
+            {
+                if ((typeof(T) == typeof(PK9) || typeof(T) == typeof(PK8)))
+                {
+                    result += "\n.RelearnMoves=$suggestAll";
+                }
+                else if (typeof(T) == typeof(PA8))
+                {
+                    result += "\n.MoveMastery=$suggestAll";
+                }
+                zh = zh.Replace("全技能", "");
             }
 
             // 添加技能
