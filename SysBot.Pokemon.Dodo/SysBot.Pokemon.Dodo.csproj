@@ -1,8 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0</TargetFrameworks>
-		<LangVersion>9</LangVersion>
+		<LangVersion>10</LangVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -12,5 +12,5 @@
 		<ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
 		<ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
 	</ItemGroup>
-
+  
 </Project>

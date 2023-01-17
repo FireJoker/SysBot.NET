@@ -56,7 +56,7 @@ namespace SysBot.Pokemon
             var templ = AutoLegalityWrapper.GetTemplate(set);
             var sav = AutoLegalityWrapper.GetTrainerInfo<T>();
             var pk = (T)sav.GetLegal(templ, out string res);
-
+            
             if (res != "Regenerated")
             {
                 Base.LogUtil.LogError($"Failed to generate a template for legal Poke Balls: \n{newShowdown}", "[GetLegalBalls]");
@@ -97,14 +97,14 @@ namespace SysBot.Pokemon
             {
                 PB8 => 400,
                 PK9 => 28,
-                _ => 162, // PK8
+                _   => 162, // PK8
             };
 
             pkm.Met_Level = pkm switch
             {
                 PB8 => 29,
                 PK9 => 34,
-                _ => pkm.Met_Level,
+                _   => pkm.Met_Level,
             };
 
             if (pkm is PK9 pk9)
@@ -289,7 +289,7 @@ namespace SysBot.Pokemon
         {
             var pkMet = (T)pkm.Clone();
             if (pkMet.Version is not (int)GameVersion.GO)
-                pkMet.MetDate = DateTime.Today;
+                pkMet.MetDate = DateTime.Parse("2020/10/20");
 
             var analysis = new LegalityAnalysis(pkMet);
             var pkTrash = (T)pkMet.Clone();

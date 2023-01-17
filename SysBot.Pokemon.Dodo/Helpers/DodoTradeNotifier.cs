@@ -1,6 +1,7 @@
 ﻿using PKHeX.Core;
 using SysBot.Base;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -9,24 +10,27 @@ namespace SysBot.Pokemon.Dodo
 {
     public class DodoTradeNotifier<T> : IPokeTradeNotifier<T> where T : PKM, new()
     {
+        public string IdentifierLocator => "Dodo";
         private T Data { get; }
         private PokeTradeTrainerInfo Info { get; }
         private int Code { get; }
         private string Username { get; }
-
+        private string UserId { get; }
         private string ChannelId { get; }
+        public Action<PokeRoutineExecutor<T>> OnFinish { private get; set; }
+        public int QueueSizeEntry { get; set; }
+        public bool ReminderSent { get; set; } = false;
 
-        public DodoTradeNotifier(T data, PokeTradeTrainerInfo info, int code, string username, string channelId)
+        public DodoTradeNotifier(T data, PokeTradeTrainerInfo info, int code, string username, string userid, string channelId)
         {
             Data = data;
             Info = info;
             Code = code;
             Username = username;
+            UserId = userid;
             ChannelId = channelId;
             LogUtil.LogText($"Created trade details for {Username} - {Code}");
         }
-
-        public Action<PokeRoutineExecutor<T>> OnFinish { private get; set; }
 
         public void TradeInitialize(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info)
         {
@@ -108,6 +112,24 @@ namespace SysBot.Pokemon.Dodo
                     $"\n4位里ID:{result.TrainerSID7}";
                 DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), text);
             }
+        }
+
+        public void SendReminder(int position, string message)
+        {
+            if (ReminderSent)
+                return;
+            ReminderSent = true;
+            DodoBot<T>.SendPersonalMessage(UserId, $"请注意，当前位置为第{position}位.\n马上就到你了，请提前做好准备！");
+        }
+
+        void IPokeTradeNotifier<T>.SendEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, IReadOnlyList<PA8> pkms)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IPokeTradeNotifier<T>.SendIncompleteEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string msg, IReadOnlyList<PA8> pkms)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -34,6 +34,10 @@ namespace SysBot.Pokemon
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public DistributionSettings Distribution { get; set; } = new();
 
+        [Category(BotTrade), Description("Settings for TradeCord.")]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public TradeCordSettings TradeCord { get; set; } = new();
+
         [Category(BotTrade)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public SeedCheckSettings SeedCheckSWSH { get; set; } = new();
@@ -64,6 +68,30 @@ namespace SysBot.Pokemon
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public StopConditionSettings StopConditions { get; set; } = new();
 
+        [Category(BotEncounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public LairBotSettings LairSWSH { get; set; } = new();
+
+        [Category(BotEncounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public DenSettings DenSWSH { get; set; } = new();
+
+        [Category(BotEncounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public BoolSettings Bool { get; set; } = new();
+
+        [Category(BotEncounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public CurryBotSettings CurrySWSH { get; set; } = new();
+
+        [Category(BotEncounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public RollingRaidSettings RollingRaidSWSH { get; set; } = new();
+
+        [Category(BotEncounter)]
+        [TypeConverter(typeof(ExpandableObjectConverter))]
+        public EtumrepDumpSettings EtumrepDump { get; set; } = new();
+
         // Integration
 
         [Category(Integration)]
@@ -81,7 +109,6 @@ namespace SysBot.Pokemon
         [Category(Integration)]
         [TypeConverter(typeof(ExpandableObjectConverter))]
         public QQSettings QQ { get; set; } = new();
-
 
         [Category(Integration)]
         [TypeConverter(typeof(ExpandableObjectConverter))]

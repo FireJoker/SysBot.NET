@@ -12,6 +12,10 @@ namespace SysBot.Pokemon
         private readonly PokeTradeQueue<T> Seed = new(PokeTradeType.Seed);
         private readonly PokeTradeQueue<T> Clone = new(PokeTradeType.Clone);
         private readonly PokeTradeQueue<T> Dump = new(PokeTradeType.Dump);
+        private readonly PokeTradeQueue<T> EtumrepDump = new(PokeTradeType.EtumrepDump);
+        private readonly PokeTradeQueue<T> FixOT = new(PokeTradeType.FixOT);
+        private readonly PokeTradeQueue<T> TradeCord = new(PokeTradeType.TradeCord);
+        private readonly PokeTradeQueue<T> Giveaway = new(PokeTradeType.Giveaway);
         public readonly TradeQueueInfo<T> Info;
         public readonly PokeTradeQueue<T>[] AllQueues;
 
@@ -19,7 +23,7 @@ namespace SysBot.Pokemon
         {
             Hub = hub;
             Info = new TradeQueueInfo<T>(hub);
-            AllQueues = new[] { Seed, Dump, Clone, Trade };
+            AllQueues = new[] { Seed, Dump, Clone, Trade, EtumrepDump, FixOT, TradeCord, Giveaway };
 
             foreach (var q in AllQueues)
                 q.Queue.Settings = hub.Config.Favoritism;
@@ -30,6 +34,9 @@ namespace SysBot.Pokemon
             PokeRoutineType.SeedCheck => Seed,
             PokeRoutineType.Clone => Clone,
             PokeRoutineType.Dump => Dump,
+            PokeRoutineType.EtumrepDump => EtumrepDump,
+            PokeRoutineType.FixOT => FixOT,
+            PokeRoutineType.TradeCord => TradeCord,
             _ => Trade,
         };
 
@@ -68,6 +75,40 @@ namespace SysBot.Pokemon
         {
             var queue = GetQueue(type);
             return queue.TryDequeue(out detail, out priority);
+        }
+
+        private bool GetDequeueLinear(QueueSettings cfg, out PokeTradeDetail<T> detail, out uint priority)
+        {
+            double longestWait = 0;
+            DateTime now = DateTime.Now;
+            PokeTradeQueue<T>? preferredQueue = null;
+            foreach (var q in AllQueues)
+            {
+                if (q.Count < 1)
+                    continue;
+
+                var peek = q.TryPeek(out detail, out priority);
+                if (!peek)
+                    continue;
+
+                var time = detail.Time;
+                var thisTime = (now - time).TotalMinutes;
+                if (thisTime > longestWait)
+                {
+                    longestWait = thisTime;
+                    preferredQueue = q;
+                }
+            }
+
+            if (preferredQueue == null)
+            {
+                detail = default!;
+                priority = default;
+                return false;
+            }
+
+            SendReminders(preferredQueue);
+            return preferredQueue.TryDequeue(out detail, out priority);
         }
 
         private bool GetFlexDequeue(out PokeTradeDetail<T> detail, out uint priority)
@@ -113,6 +154,7 @@ namespace SysBot.Pokemon
                 return false;
             }
 
+            SendReminders(preferredQueue);
             return preferredQueue.TryDequeue(out detail, out priority);
         }
 
@@ -126,7 +168,33 @@ namespace SysBot.Pokemon
                 return true;
             if (TryDequeueInternal(PokeRoutineType.LinkTrade, out detail, out priority))
                 return true;
+            if (TryDequeueInternal(PokeRoutineType.EtumrepDump, out detail, out priority))
+                return true;
+            if (TryDequeueInternal(PokeRoutineType.FixOT, out detail, out priority))
+                return true;
+            if (TryDequeueInternal(PokeRoutineType.TradeCord, out detail, out priority))
+                return true;
             return false;
+        }
+
+        private DateTime LastPrioTime = DateTime.Now;
+        private Random rand = new Random();
+        private object _syncPrio = new object();
+        private bool GetFlexDequeuePrioritiseWeb(QueueSettings cfg, out PokeTradeDetail<T> detail, out uint priority)
+        {
+            lock (_syncPrio)
+            {
+                if ((DateTime.Now - LastPrioTime).TotalMinutes > 1.3 || rand.Next(0, 4) == 1)
+                {
+                    if (GetFlexDequeueOld(out detail, out priority) != false)
+                    {
+                        LastPrioTime = DateTime.Now;
+                        return true;
+                    }
+                }
+            }
+
+            return GetDequeueLinear(cfg, out detail, out priority);
         }
 
         public void Enqueue(PokeRoutineType type, PokeTradeDetail<T> detail, uint priority)
@@ -143,5 +211,16 @@ namespace SysBot.Pokemon
             foreach (var f in Forwarders)
                 f.Invoke(b, detail);
         }
+
+        public void SendReminders(PokeTradeQueue<T> queue)
+        {
+            foreach (var v in queue.Queue)
+            {
+                var posInfo = Info.CheckPosition(v.Value.Trainer.ID);
+                if (v.Value.Notifier.QueueSizeEntry >= Hub.Config.Queues.ReminderQueueCountStart && posInfo.Position <= Hub.Config.Queues.ReminderAtPosition)
+                    v.Value.Notifier.SendReminder(posInfo.Position, string.Empty);
+            }
+        }
+
     }
 }

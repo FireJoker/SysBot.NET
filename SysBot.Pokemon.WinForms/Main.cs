@@ -46,7 +46,7 @@ namespace SysBot.Pokemon.WinForms
             LoadControls();
             Text = $"{Text} ({Config.Mode})";
             Task.Run(BotMonitor);
-#if NETFRAMEWORK
+#if NET6_0_OR_GREATER
             InitUtil.InitializeStubs(Config.Mode);
 #endif
         }
@@ -159,6 +159,8 @@ namespace SysBot.Pokemon.WinForms
             var cfg = GetCurrentConfiguration();
             var lines = JsonConvert.SerializeObject(cfg, GetSettings());
             File.WriteAllText(Program.ConfigPath, lines);
+            if (TradeCordHelper<PK8>.TCInitialized)
+                TradeCordHelper<PK8>.CleanDB();
         }
 
         private static JsonSerializerSettings GetSettings() => new()

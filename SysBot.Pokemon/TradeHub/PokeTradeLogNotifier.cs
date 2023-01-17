@@ -2,6 +2,7 @@
 using SysBot.Base;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace SysBot.Pokemon
 {
@@ -48,6 +49,27 @@ namespace SysBot.Pokemon
             LogUtil.LogInfo(message, routine.Connection.Label);
         }
 
+        void IPokeTradeNotifier<T>.SendReminder(int position, string message)
+        {
+
+        }
+
         public Action<PokeRoutineExecutor<T>>? OnFinish { get; set; }
+
+        public void SendEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, IReadOnlyList<PA8> pkms)
+        {
+            LogUtil.LogInfo($"Sending {info.Trainer.TrainerName} the EtumrepMMO embed.", routine.Connection.Label);
+        }
+
+        public void SendIncompleteEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string msg, IReadOnlyList<PA8> pkms)
+        {
+            LogUtil.LogInfo($"Sending invalid request response to {info.Trainer.TrainerName}: {msg}", routine.Connection.Label);
+        }
+
+        string IPokeTradeNotifier<T>.IdentifierLocator => "BotTrade";
+
+        int IPokeTradeNotifier<T>.QueueSizeEntry { get; set; } = 0;
+
+        bool IPokeTradeNotifier<T>.ReminderSent => true;
     }
 }

@@ -126,11 +126,12 @@ namespace SysBot.Pokemon.Dodo
             PokeRoutineType type, out string msg)
         {
             var trainer = new PokeTradeTrainerInfo(name, userId);
-            var notifier = new DodoTradeNotifier<T>(pk, trainer, code, name, channelId);
+            var notifier = new DodoTradeNotifier<T>(pk, trainer, code, name, userId.ToString(), channelId);
             var tt = type == PokeRoutineType.SeedCheck ? PokeTradeType.Seed : 
-                (type == PokeRoutineType.Dump ? PokeTradeType.Dump : 
-                (type == PokeRoutineType.Clone ? PokeTradeType.Clone : PokeTradeType.Specific));
-                //PokeRoutineType.SeedCheck ? PokeTradeType.Seed : (type == PokeRoutineType.Dump ? PokeTradeType.Dump : PokeTradeType.Specific);
+                (type == PokeRoutineType.Clone ? PokeTradeType.Clone : 
+                (type == PokeRoutineType.Dump ? PokeTradeType.Dump :
+                (type == PokeRoutineType.EtumrepDump ? PokeTradeType.EtumrepDump :
+                PokeTradeType.Specific)));
 
             var detail =
                 new PokeTradeDetail<T>(pk, trainer, notifier, tt, code, true);

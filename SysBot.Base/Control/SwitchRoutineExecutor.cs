@@ -94,6 +94,9 @@ namespace SysBot.Base
             return false;
         }
 
+        public async Task DaySkip(CancellationToken token) => await Connection.SendAsync(SwitchCommand.DaySkip(UseCRLF), token).ConfigureAwait(false);
+        public async Task ResetTime(CancellationToken token) => await Connection.SendAsync(SwitchCommand.ResetTime(UseCRLF), token).ConfigureAwait(false);
+
         public static async Task<string> GetVersionAsync(ISwitchConnectionAsync connection, CancellationToken token)
         {
             var gvbytes = Encoding.ASCII.GetBytes("getVersion\r\n");

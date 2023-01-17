@@ -7,17 +7,21 @@ using System.Linq;
 using Mirai.Net.Data.Messages;
 using Mirai.Net.Data.Messages.Concretes;
 using Mirai.Net.Utils.Scaffolds;
+using System.Collections.Generic;
 
 namespace SysBot.Pokemon.QQ
 {
     public class MiraiQQTradeNotifier<T> : IPokeTradeNotifier<T> where T : PKM, new()
     {
+        public string IdentifierLocator => "QQ";
         private T Data { get; }
         private PokeTradeTrainerInfo Info { get; }
         private int Code { get; }
         private string Username { get; }
-
         private string GroupId { get; }
+        public Action<PokeRoutineExecutor<T>>? OnFinish { private get; set; }
+        public int QueueSizeEntry { get; set; }
+        public bool ReminderSent { get; set; } = false;
 
         public MiraiQQTradeNotifier(T data, PokeTradeTrainerInfo info, int code, string username, string groupId)
         {
@@ -28,8 +32,6 @@ namespace SysBot.Pokemon.QQ
             GroupId = groupId;
             LogUtil.LogText($"Created trade details for {Username} - {Code}");
         }
-
-        public Action<PokeRoutineExecutor<T>>? OnFinish { private get; set; }
 
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)
         {
@@ -117,6 +119,24 @@ namespace SysBot.Pokemon.QQ
         private void SendMessage(MessageBase[] message)
         {
             var _ = MessageManager.SendGroupMessageAsync(GroupId, message).Result;
+        }
+
+        public void SendReminder(int position, string message)
+        {
+            if (ReminderSent)
+                return;
+            ReminderSent = true;
+            SendMessage($"[注意] 当前位置为第{position}位.\n马上就到你了，请提前做好准备！");
+        }
+
+        void IPokeTradeNotifier<T>.SendEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, IReadOnlyList<PA8> pkms)
+        {
+            throw new NotImplementedException();
+        }
+
+        void IPokeTradeNotifier<T>.SendIncompleteEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string msg, IReadOnlyList<PA8> pkms)
+        {
+            throw new NotImplementedException();
         }
     }
 }

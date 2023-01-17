@@ -140,11 +140,11 @@ namespace SysBot.Pokemon.Dodo
                 DodoHelper<TP>.StartClone(eventBody.DodoId, eventBody.Personal.NickName, eventBody.ChannelId);
                 return;
             }
-            //else if (content.Trim().StartsWith("check"))
-            //{
-            //    DodoHelper<TP>.StartTrade(content, eventBody.DodoId, eventBody.Personal.NickName, eventBody.ChannelId);
-            //    return;
-            //}
+            else if (content.Trim().StartsWith("seed"))
+            {
+                DodoHelper<TP>.StartDump(eventBody.DodoId, eventBody.Personal.NickName, eventBody.ChannelId);
+                return;
+            }
             //else if (content.Trim().StartsWith("dump"))
             //{
             //    DodoHelper<TP>.StartDump(eventBody.DodoId, eventBody.Personal.NickName, eventBody.ChannelId);

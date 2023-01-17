@@ -117,6 +117,16 @@ namespace SysBot.Base
             }, token);
         }
 
+
+        public Task<byte[]> Screengrab(CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                Send(SwitchCommand.Screengrab(false));
+                return GetScreenshot();
+            }, token);
+        }
+
         public Task<byte[]> PixelPeek(CancellationToken token)
         {
             return Task.Run(() =>

@@ -57,6 +57,12 @@ namespace SysBot.Pokemon
         [Category(UserBias), Description("Biases the Dump Queue's weight based on how many users are in the queue.")]
         public int YieldMultCountDump { get; set; } = 100;
 
+        [Category(UserBias), Description("Biases the FixOT Queue's weight based on how many users are in the queue.")]
+        public int YieldMultCountFixOT { get; set; } = 100;
+
+        [Category(UserBias), Description("Biases the TradeCord Queue's weight based on how many users are in the queue.")]
+        public int YieldMultCountTradeCord { get; set; } = 100;
+
         // Flex Time
 
         [Category(TimeBias), Description("Determines whether the weight should be added or multiplied to the total weight.")]
@@ -74,20 +80,28 @@ namespace SysBot.Pokemon
         [Category(TimeBias), Description("Checks time elapsed since the user joined the Dump queue, and increases the queue's weight accordingly.")]
         public int YieldMultWaitDump { get; set; } = 1;
 
+        [Category(TimeBias), Description("Checks time elapsed since the user joined the FixOT queue, and increases the queue's weight accordingly.")]
+        public int YieldMultWaitFixOT { get; set; } = 1;
+
+        [Category(TimeBias), Description("Checks time elapsed since the user joined the TradeCord queue, and increases the queue's weight accordingly.")]
+        public int YieldMultWaitTradeCord { get; set; } = 1;
+
         [Category(TimeBias), Description("Multiplies the amount of users in queue to give an estimate of how much time it will take until the user is processed.")]
-        public float EstimatedDelayFactor { get; set; } = 2.0f;
+        public float EstimatedDelayFactor { get; set; } = 1.5f;
 
         [Category(UserBias), Description("How many people needed to be in the queue to send a reminder.")]
-        public int ReminderQueueCountStart { get; set; } = 150;
+        public int ReminderQueueCountStart { get; set; } = 5;
 
         [Category(UserBias), Description("Minimum position user needs to be in to send reminder.")]
-        public int ReminderAtPosition { get; set; } = 120;
+        public int ReminderAtPosition { get; set; } = 3;
 
         private int GetCountBias(PokeTradeType type) => type switch
         {
             PokeTradeType.Seed => YieldMultCountSeedCheck,
             PokeTradeType.Clone => YieldMultCountClone,
             PokeTradeType.Dump => YieldMultCountDump,
+            PokeTradeType.FixOT => YieldMultCountFixOT,
+            PokeTradeType.TradeCord => YieldMultCountTradeCord,
             _ => YieldMultCountTrade,
         };
 
@@ -96,6 +110,8 @@ namespace SysBot.Pokemon
             PokeTradeType.Seed => YieldMultWaitSeedCheck,
             PokeTradeType.Clone => YieldMultWaitClone,
             PokeTradeType.Dump => YieldMultWaitDump,
+            PokeTradeType.FixOT => YieldMultCountFixOT,
+            PokeTradeType.TradeCord => YieldMultCountTradeCord,
             _ => YieldMultWaitTrade,
         };
 

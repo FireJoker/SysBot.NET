@@ -281,6 +281,30 @@ namespace SysBot.Base
         /// <returns>Encoded command bytes</returns>
         public static byte[] IsProgramRunning(string titleID, bool crlf = true) => Encode($"isProgramRunning 0x{titleID}", crlf);
 
+        /// Advances system network clock to advance time by one day at a time.
+        /// </summary>
+        /// <param name="resetAfterNSkips">Day advance amount after which we should reset time to initial time (0 if we shouldn't)</param>
+        /// <param name="resetNTP">Should we use NTP to sync back time (1/0 for true/false, about to be deprecated)</param>
+        /// <param name="crlf">Line terminator (unused by USB's protocol)</param>
+        /// <returns>Encoded command bytes</returns>
+        public static byte[] DaySkip(bool crlf = true) => Encode($"daySkip", crlf);
+
+        /// <summary>
+        /// Sync system network clock with the initial day skip's clock.
+        /// </summary>
+        /// <param name="crlf">Line terminator (unused by USB's protocol)</param>
+        /// <returns>Encoded command bytes</returns>
+        public static byte[] ResetTime(bool crlf = true) => Encode("resetTime", crlf);
+
+        /// <summary>
+        /// Takes and sends a raw screenshot.
+        /// </summary>
+        /// <param name="crlf">Line terminator (unused by USB's protocol)</param>
+        /// <returns>Encoded command bytes</returns>
+
+        public static byte[] Screengrab(bool crlf = true) => Encode("pixelPeek", crlf);
+
+
         public static byte[] PixelPeek(bool crlf = true) => Encode("pixelPeek", crlf);
 
         public static byte[] GetVersion(bool crlf = true) => Encode("getVersion", crlf);

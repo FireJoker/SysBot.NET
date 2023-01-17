@@ -7,6 +7,10 @@
         Seed,
         Clone,
         Dump,
-        Distribution
+        EtumrepDump,
+        FixOT,
+        TradeCord,
+        Giveaway,
+        SupportTrade,
     }
 }
