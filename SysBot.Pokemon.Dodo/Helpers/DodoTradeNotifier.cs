@@ -20,6 +20,7 @@ namespace SysBot.Pokemon.Dodo
         public Action<PokeRoutineExecutor<T>> OnFinish { private get; set; }
         public int QueueSizeEntry { get; set; }
         public bool ReminderSent { get; set; } = false;
+        public DodoReminderHelper<T> ReminderHelper { get; set; } = null;
 
         public DodoTradeNotifier(T data, PokeTradeTrainerInfo info, int code, string username, string userid, string channelId)
         {
@@ -119,17 +120,11 @@ namespace SysBot.Pokemon.Dodo
             if (ReminderSent)
                 return;
             ReminderSent = true;
-            DodoBot<T>.SendPersonalMessage(UserId, $"请注意，当前位置为第{position}位.\n马上就到你了，请提前做好准备！");
+            if (ReminderHelper != null)
+                ReminderHelper.Remind(UserId);
         }
 
-        void IPokeTradeNotifier<T>.SendEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, IReadOnlyList<PA8> pkms)
-        {
-            throw new NotImplementedException();
-        }
-
-        void IPokeTradeNotifier<T>.SendIncompleteEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string msg, IReadOnlyList<PA8> pkms)
-        {
-            throw new NotImplementedException();
-        }
+        public void SendEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, IReadOnlyList<PA8> pkms) { }
+        public void SendIncompleteEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string msg, IReadOnlyList<PA8> pkms) { }
     }
 }

@@ -16,19 +16,24 @@ namespace SysBot.Pokemon.Discord
         private PokeTradeTrainerInfo Info { get; }
         private int Code { get; }
         private SocketUser Trader { get; }
+        private ISocketMessageChannel CommandSentChannel { get; }
         public Action<PokeRoutineExecutor<T>>? OnFinish { private get; set; }
         public int QueueSizeEntry { get; set; }
         public bool ReminderSent { get; set; } = false;
 
         public readonly PokeTradeHub<T> Hub = SysCord<T>.Runner.Hub;
 
-        public DiscordTradeNotifier(T data, PokeTradeTrainerInfo info, int code, SocketUser trader)
+        public DiscordTradeNotifier(T data, PokeTradeTrainerInfo info, int code, SocketUser trader, ISocketMessageChannel commandSentChannel)
         {
             Data = data;
             Info = info;
             Code = code;
             Trader = trader;
+            CommandSentChannel = commandSentChannel;
+
+            QueueSizeEntry = Hub.Queues.Info.Count;
         }
+
 
         public void TradeInitialize(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info)
         {
@@ -105,14 +110,6 @@ namespace SysBot.Pokemon.Discord
             Trader.SendMessageAsync(msg, embed: embed.Build()).ConfigureAwait(false);
         }
 
-        public void SendReminder(int position, string message)
-        {
-            if (ReminderSent)
-                return;
-            ReminderSent = true;
-            Trader.SendMessageAsync($"[Reminder] {Trader.Mention} You are currently position {position} in the queue. Your trade will start soon!");
-        }
-
         public void SendIncompleteEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string msg, IReadOnlyList<PA8> pkms)
         {
             var list = new List<FileAttachment>();
@@ -139,5 +136,14 @@ namespace SysBot.Pokemon.Discord
             OnFinish?.Invoke(routine);
             _ = Task.Run(async () => await EtumrepUtil.SendEtumrepEmbedAsync(Trader, pkms).ConfigureAwait(false));
         }
+
+        public void SendReminder(int position, string message)
+        {
+            if (ReminderSent)
+                return;
+            ReminderSent = true;
+            Trader.SendMessageAsync($"[Reminder] {Trader.Mention} You are currently position {position} in the queue. Your trade will start soon!");
+        }
+
     }
 }

@@ -28,6 +28,8 @@
   <ItemGroup>
     <ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon.Discord\SysBot.Pokemon.Discord.csproj" />
+    <ProjectReference Include="..\SysBot.Pokemon.Twitch\SysBot.Pokemon.Twitch.csproj" />
+    <ProjectReference Include="..\SysBot.Pokemon.YouTube\SysBot.Pokemon.YouTube.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon.Dodo\SysBot.Pokemon.Dodo.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon.QQ\SysBot.Pokemon.QQ.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
@@ -36,9 +38,9 @@
 
   <ItemGroup Condition="$(TargetFramework.StartsWith('net6')) AND '$(Configuration)' == 'Release'">
     <PackageReference Include="Costura.Fody" Version="5.7.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+	  <PrivateAssets>all</PrivateAssets>
+	  <IncludeAssets>runtime; compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  </PackageReference>
     <PackageReference Include="Fody" Version="6.5.5" />
   </ItemGroup>
 
