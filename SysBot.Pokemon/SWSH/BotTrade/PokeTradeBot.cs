@@ -376,7 +376,7 @@ namespace SysBot.Pokemon
             }
 
             PokeTradeResult update;
-            var trainer = new PartnerDataHolder(trainerNID, trainerName, trainerTID.ToString());
+            var trainer = new PartnerDataHolder(trainerNID, trainerName, trainerTID.ToString()!);
             (toSend, update) = await GetEntityToSend(sav, poke, offered, oldEC, toSend, trainer, token).ConfigureAwait(false);
             if (update != PokeTradeResult.Success)
             {
@@ -626,10 +626,8 @@ namespace SysBot.Pokemon
                 return (offered, PokeTradeResult.IllegalTrade);
             }
 
-
             // Inject the shown Pokémon.
             var clone = (PK8)offered.Clone();
-
             if (Hub.Config.Legality.ResetHOMETracker)
                 clone.Tracker = 0;
 
@@ -1135,7 +1133,9 @@ namespace SysBot.Pokemon
             var ball = $"\n{(Ball)offered.Ball}";
             var extraInfo = $"OT: {name}{ball}{shiny}";
             var set = ShowdownParsing.GetShowdownText(offered).Split('\n').ToList();
-            set.Remove(set.Find(x => x.Contains("Shiny")));
+            var shinyRes = set.Find(x => x.Contains("Shiny"));
+            if (shinyRes != null)
+                set.Remove(shinyRes);
             set.InsertRange(1, extraInfo.Split('\n'));
 
             if (!laInit.Valid)
@@ -1151,7 +1151,7 @@ namespace SysBot.Pokemon
             if (clone.FatefulEncounter)
             {
                 clone.SetDefaultNickname(laInit);
-                var info = new SimpleTrainerInfo { Gender = clone.OT_Gender, Language = clone.Language, OT = name, TID = clone.TID, SID = clone.SID, Generation = 8 };
+                var info = new SimpleTrainerInfo { Gender = clone.OT_Gender, Language = clone.Language, OT = name, TID16 = clone.TID16, SID16 = clone.SID16, Generation = 8 };
                 var mg = EncounterEvent.GetAllEvents().Where(x => x.Species == clone.Species && x.Form == clone.Form && x.IsShiny == clone.IsShiny && x.OT_Name == clone.OT_Name).ToList();
                 if (mg.Count > 0)
                     clone = TradeExtensions<PK8>.CherishHandler(mg.First(), info);
@@ -1228,8 +1228,8 @@ namespace SysBot.Pokemon
             var cln = (PK8)toSend.Clone();
 
             cln.OT_Gender = data[6];
-            cln.TrainerID7 = TID[0];
-            cln.TrainerSID7 = TID[1];
+            cln.TrainerTID7 = (uint)TID[0];
+            cln.TrainerSID7 = (uint)TID[1];
             cln.Language = data[5];
             cln.OT_Name = trainerName;
 
@@ -1268,7 +1268,7 @@ namespace SysBot.Pokemon
             };
 
             // Set different shiny types
-            uint shinyForm = (uint)(toSend.TID ^ toSend.SID ^ ((toSend.PID >> 16) ^ (toSend.PID & 0xFFFF)));
+            uint shinyForm = (uint)(toSend.TID16 ^ toSend.SID16 ^ ((toSend.PID >> 16) ^ (toSend.PID & 0xFFFF)));
 
             // Set random shiny
             if (shinyForm < 16 && shinyForm != 0)

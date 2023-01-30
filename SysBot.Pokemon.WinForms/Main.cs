@@ -46,7 +46,7 @@ namespace SysBot.Pokemon.WinForms
             LoadControls();
             Text = $"{Text} ({Config.Mode})";
             Task.Run(BotMonitor);
-#if NET6_0_OR_GREATER
+#if NETFRAMEWORK
             InitUtil.InitializeStubs(Config.Mode);
 #endif
         }

@@ -28,6 +28,17 @@ namespace SysBot.Pokemon
         [Category(Startup), Description("机器人响应频道id")]
         public string ChannelId { get; set; } = string.Empty;
 
+        // Whitelists
+
+        [Category(Roles), Description("Users with this role are allowed to use Giveaway.")]
+        public RemoteControlAccessList RoleCanGiveaway { get; set; } = new() { AllowIfEmpty = false };
+
+        [Category(Roles), Description("Users with this role are allowed to use TradeFolder.")]
+        public RemoteControlAccessList RoleCanTradeFolder { get; set; } = new() { AllowIfEmpty = false };
+
+        [Category(Roles), Description("Users with this role are allowed to use MultiTrade.")]
+        public RemoteControlAccessList RoleCanMultiTrade { get; set; } = new() { AllowIfEmpty = false };
+
         // Operation
 
         [Category(Roles), Description("Users with this role are allowed to join the queue with a better position.")]

@@ -8,8 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
-using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
 
 namespace SysBot.Pokemon
 {
@@ -81,7 +79,9 @@ namespace SysBot.Pokemon
 
                 Log("Identifying trainer data of the host console.");
                 var sav = await IdentifyTrainer(token).ConfigureAwait(false);
-
+                OT = sav.OT;
+                DisplaySID = sav.DisplaySID;
+                DisplayTID = sav.DisplayTID;
                 RecentTrainerCache.SetRecentTrainer(sav);
                 await InitializeSessionOffsets(token).ConfigureAwait(false);
 
@@ -376,8 +376,6 @@ namespace SysBot.Pokemon
                 await ExitTradeToPortal(false, token).ConfigureAwait(false);
                 return PokeTradeResult.NoTrainerWasFound;
             }
-
-            poke.SendNotification(this, $"Found Link Trade partner: {tradePartner.TrainerName}. Waiting for a Pokémon...");
 
             if (poke.Type == PokeTradeType.Dump)
             {
@@ -1094,7 +1092,7 @@ namespace SysBot.Pokemon
             if (clone.FatefulEncounter)
             {
                 clone.SetDefaultNickname(laInit);
-                var info = new SimpleTrainerInfo { Gender = clone.OT_Gender, Language = clone.Language, OT = name, TID = clone.TID, SID = clone.SID, Generation = 9 };
+                var info = new SimpleTrainerInfo { Gender = clone.OT_Gender, Language = clone.Language, OT = name, TID16 = clone.TID16, SID16 = clone.SID16, Generation = 9 };
                 var mg = EncounterEvent.GetAllEvents().Where(x => x.Species == clone.Species && x.Form == clone.Form && x.IsShiny == clone.IsShiny && x.OT_Name == clone.OT_Name).ToList();
                 if (mg.Count > 0)
                     clone = TradeExtensions<PK9>.CherishHandler(mg.First(), info);
@@ -1166,8 +1164,8 @@ namespace SysBot.Pokemon
 
             var cln = (PK9)toSend.Clone();
             cln.OT_Gender = tradePartner.Gender;
-            cln.TrainerID7 = (int)Math.Abs(tradePartner.DisplayTID);
-            cln.TrainerSID7 = (int)Math.Abs(tradePartner.DisplaySID);
+            cln.TrainerTID7 = (uint)Math.Abs(tradePartner.DisplayTID);
+            cln.TrainerSID7 = (uint)Math.Abs(tradePartner.DisplaySID);
             cln.Language = tradePartner.Language;
             cln.OT_Name = tradePartner.OT;
             //cln.Version = tradePartner.Game;
@@ -1212,7 +1210,7 @@ namespace SysBot.Pokemon
 
             if (toSend.Met_Location == Locations.TeraCavern9 && toSend.IsShiny)
             {
-                cln.PID = (((uint)(cln.TID ^ cln.SID) ^ (cln.PID & 0xFFFF) ^ 1u) << 16) | (cln.PID & 0xFFFF);
+                cln.PID = (((uint)(cln.TID16 ^ cln.SID16) ^ (cln.PID & 0xFFFF) ^ 1u) << 16) | (cln.PID & 0xFFFF);
             }
             else if (toSend.IsShiny)
                 cln.SetShiny();

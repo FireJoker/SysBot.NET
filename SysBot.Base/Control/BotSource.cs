@@ -26,8 +26,8 @@ namespace SysBot.Base
 
             Task.Run(async () =>
             {
-                IsPaused = IsRunning = IsStopping = false;
                 await Bot.HardStop().ConfigureAwait(false);
+                IsPaused = IsRunning = IsStopping = false;
             });
         }
 
