@@ -11,7 +11,7 @@ namespace SysBot.Pokemon.Dodo
 {
     public class DodoHelper<T> where T : PKM, new()
     {
-        public static void StartTrade(string ps, string dodoId, string nickName, string channelId)
+        public static void StartTrade(string ps, string dodoId, string nickName, string channelId, string islandId)
         {
             var _ = CheckAndGetPkm(ps, dodoId, out var msg, out var pkm);
             if (!_)
@@ -20,29 +20,29 @@ namespace SysBot.Pokemon.Dodo
                 return;
             }
 
-            StartTrade(pkm, dodoId, nickName, channelId);
+            StartTrade(pkm, dodoId, nickName, channelId, islandId);
         }
 
-        public static void StartTrade(T pkm, string dodoId, string nickName, string channelId)
+        public static void StartTrade(T pkm, string dodoId, string nickName, string channelId, string islandId)
         {
             var code = DodoBot<T>.Info.GetRandomTradeCode();
-            var __ = AddToTradeQueue(pkm, code, ulong.Parse(dodoId), nickName, channelId,
+            var __ = AddToTradeQueue(pkm, code, ulong.Parse(dodoId), nickName, channelId, islandId,
                 PokeRoutineType.LinkTrade, out string message);
             DodoBot<T>.SendChannelMessage(message, channelId);
         }
 
-        public static void StartClone(string dodoId, string nickName, string channelId)
+        public static void StartClone(string dodoId, string nickName, string channelId, string islandId)
         {
             var code = DodoBot<T>.Info.GetRandomTradeCode();
-            var __ = AddToTradeQueue(new T(), code, ulong.Parse(dodoId), nickName, channelId,
+            var __ = AddToTradeQueue(new T(), code, ulong.Parse(dodoId), nickName, channelId, islandId,
                 PokeRoutineType.Clone, out string message);
             DodoBot<T>.SendChannelMessage(message, channelId); 
         }
 
-        public static void StartDump(string dodoId, string nickName, string channelId)
+        public static void StartDump(string dodoId, string nickName, string channelId, string islandId)
         {
             var code = DodoBot<T>.Info.GetRandomTradeCode();
-            var __ = AddToTradeQueue(new T(), code, ulong.Parse(dodoId), nickName, channelId,
+            var __ = AddToTradeQueue(new T(), code, ulong.Parse(dodoId), nickName, channelId, islandId,
                 PokeRoutineType.Dump, out string message);
             DodoBot<T>.SendChannelMessage(message, channelId);
         }
@@ -111,9 +111,7 @@ namespace SysBot.Pokemon.Dodo
                     : "我没办法创造非法宝可梦";
                 msg = $"<@!{username}>: {reason}";
             }
-#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
             {
                 LogUtil.LogSafe(ex, nameof(DodoBot<T>));
                 msg = $"<@!{username}>: 发生了一个错误,取消交换";
@@ -122,11 +120,11 @@ namespace SysBot.Pokemon.Dodo
             return false;
         }
 
-        private static bool AddToTradeQueue(T pk, int code, ulong userId, string name, string channelId,
+        private static bool AddToTradeQueue(T pk, int code, ulong userId, string name, string channelId, string islandId,
             PokeRoutineType type, out string msg)
         {
             var trainer = new PokeTradeTrainerInfo(name, userId);
-            var notifier = new DodoTradeNotifier<T>(pk, trainer, code, name, userId.ToString(), channelId);
+            var notifier = new DodoTradeNotifier<T>(pk, trainer, code, name, userId.ToString(), channelId, islandId);
             var tt = type == PokeRoutineType.SeedCheck ? PokeTradeType.Seed : 
                 (type == PokeRoutineType.Clone ? PokeTradeType.Clone : 
                 (type == PokeRoutineType.Dump ? PokeTradeType.Dump :

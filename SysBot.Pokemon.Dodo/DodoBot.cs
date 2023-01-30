@@ -1,8 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using DoDo.Open.Sdk.Models;
-using DoDo.Open.Sdk.Models.Channels;
+using DoDo.Open.Sdk.Models.Islands;
 using DoDo.Open.Sdk.Models.Messages;
 using DoDo.Open.Sdk.Models.Personals;
+using DoDo.Open.Sdk.Models.Channels;
+using DoDo.Open.Sdk.Models.ChannelMessages;
 using DoDo.Open.Sdk.Services;
 using PKHeX.Core;
 
@@ -15,7 +18,7 @@ namespace SysBot.Pokemon.Dodo
 
         public static OpenApiService OpenApiService;
 
-        private DodoSettings Settings;
+        private static DodoSettings Settings;
 
         public DodoBot(DodoSettings settings, PokeTradeHub<T> hub)
         {
@@ -84,6 +87,19 @@ namespace SysBot.Pokemon.Dodo
             });
         }
 
+        public static void SendChannelAtMessage(ulong atDodoId, string message, string channelId)
+        {
+            if (string.IsNullOrEmpty(message)) return;
+            OpenApiService.SetChannelMessageSend(new SetChannelMessageSendInput<MessageBodyText>
+            {
+                ChannelId = channelId,
+                MessageBody = new MessageBodyText
+                {
+                    Content = $"<@!{atDodoId}> {message}"
+                }
+            });
+        }
+
         public static void SetChannelMessageWithdraw(string messageId, string reason)
         {
             OpenApiService.SetChannelMessageWithdraw(new SetChannelMessageWithdrawInput
@@ -109,25 +125,13 @@ namespace SysBot.Pokemon.Dodo
             });
         }
 
-        public static void SendChannelAtMessage(ulong atDodoId, string message, string channelId)
-        {
-            if (string.IsNullOrEmpty(message)) return;
-            OpenApiService.SetChannelMessageSend(new SetChannelMessageSendInput<MessageBodyText>
-            {
-                ChannelId = channelId,
-                MessageBody = new MessageBodyText
-                {
-                    Content = $"<@!{atDodoId}> {message}"
-                }
-            });
-        }
-
-        public static void SendPersonalMessage(string dodoId, string message)
+        public static void SendPersonalMessage(string dodoId, string message, string islandSourceId)
         {
             if (string.IsNullOrEmpty(message)) return;
             OpenApiService.SetPersonalMessageSend(new SetPersonalMessageSendInput<MessageBodyText>
             {
-                DoDoId = dodoId,
+                IslandSourceId = islandSourceId,
+                DodoSourceId = dodoId,
                 MessageBody = new MessageBodyText
                 {
                     Content = message
