@@ -13,8 +13,8 @@ namespace SysBot.Pokemon.Dodo
         private readonly string IslandId;
         private readonly PokeTradeHubConfig Config;
 
-        private List<string> NotifyPings = new List<string>();
-        private object _sync = new object();
+        private readonly List<string> NotifyPings = new List<string>();
+        private readonly object _sync = new object();
 
         public DodoReminderHelper(string userid, string islandid, PokeTradeHubConfig config) 
         { 
@@ -39,7 +39,7 @@ namespace SysBot.Pokemon.Dodo
                 if (NotifyPings.Count >= Config.Queues.ReminderQueueCountStart)
                 {
                     string msg = $" 注意，你当前在{Config.Queues.ReminderAtPosition}位。\n请提前做好准备！确保游戏已经联网！";
-                    DodoBot<T>.SendPersonalMessage(userid, msg, islandid);
+                    DodoBot<T>.SendPersonalMessage(userid, islandid, msg);
                     NotifyPings.Clear();
                 }
             } 

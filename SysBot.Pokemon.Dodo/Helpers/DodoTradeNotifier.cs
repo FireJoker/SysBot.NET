@@ -45,8 +45,8 @@ namespace SysBot.Pokemon.Dodo
             LogUtil.LogText(msg);
             var text = $"\n{(Data.IsShiny ? "异色" : string.Empty)}{ShowdownTranslator<T>.GameStringsZh.Species[Data.Species]}{(Data.IsEgg ? "(蛋)" : string.Empty)}准备完成\n请提前准备好\n密码见私信";
             DodoBot<T>.SendChannelAtMessage(info.Trainer.ID, text, ChannelId);
-            DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(),
-                $"准备交换:{ShowdownTranslator<T>.GameStringsZh.Species[Data.Species]}\n连接密码:{info.Code:0000 0000}\n我的名字:{routine.InGameName}", IslandId);
+            DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), IslandId,
+                $"准备交换:{ShowdownTranslator<T>.GameStringsZh.Species[Data.Species]}\n连接密码:{info.Code:0000 0000}\n我的名字:{routine.InGameName}");
         }
 
         public void TradeSearching(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info)
@@ -56,8 +56,7 @@ namespace SysBot.Pokemon.Dodo
             var message = $"I'm waiting for you{trainer}! My IGN is {routine.InGameName}.";
             message += $" Your trade code is: {info.Code:0000 0000}";
             LogUtil.LogText(message);
-            DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), 
-                $"我在等你了\n连接密码:{info.Code:0000 0000}\n我的名字:{routine.InGameName}", IslandId);
+            DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), IslandId, $"我在等你了\n连接密码:{info.Code:0000 0000}\n我的名字:{routine.InGameName}");
         }
 
         public void TradeCanceled(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, PokeTradeResult msg)
@@ -65,7 +64,7 @@ namespace SysBot.Pokemon.Dodo
             OnFinish?.Invoke(routine);
             var line = $"@{info.Trainer.TrainerName}: Trade canceled, {msg}";
             LogUtil.LogText(line);
-            DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), "交换取消", IslandId);
+            DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), IslandId, "交换取消");
         }
 
         public void TradeFinished(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, T result)
@@ -76,7 +75,7 @@ namespace SysBot.Pokemon.Dodo
                 ? $"Trade finished. Enjoy your {(Species)tradedToUser}!"
                 : "Trade finished!");
             LogUtil.LogText(message);
-            DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), "交换完成", IslandId);
+            DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), IslandId, "交换完成");
         }
 
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, string message)
@@ -88,8 +87,7 @@ namespace SysBot.Pokemon.Dodo
                 var OT = splitTotal[4];
                 var TID = splitTotal[6];
                 var SID = splitTotal[8].Split('.')[0];
-                DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(),
-                    $"找到初训家：{OT}\nTID(表ID)：{TID}\nSID(里ID)：{SID}\n等待交换宝可梦", IslandId);
+                DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), IslandId, $"找到初训家：{OT}\nTID(表ID)：{TID}\nSID(里ID)：{SID}\n等待交换宝可梦");
             }
         }
 
@@ -99,7 +97,7 @@ namespace SysBot.Pokemon.Dodo
             if (message.Details.Count > 0)
                 msg += ", " + string.Join(", ", message.Details.Select(z => $"{z.Heading}: {z.Detail}"));
             LogUtil.LogText(msg);
-            DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(),msg, IslandId);
+            DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), IslandId, msg);
         }
 
         public void SendNotification(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, T result, string message)
@@ -114,7 +112,7 @@ namespace SysBot.Pokemon.Dodo
                     $"\n训练家语言:{result.Language}" +
                     $"\n6位表ID:{result.SID16}" +
                     $"\n4位里ID:{result.SID16}";
-                DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), text, IslandId);
+                DodoBot<T>.SendPersonalMessage(info.Trainer.ID.ToString(), IslandId, text);
             }
         }
 
@@ -123,8 +121,7 @@ namespace SysBot.Pokemon.Dodo
             if (ReminderSent)
                 return;
             ReminderSent = true;
-            if (ReminderHelper != null)
-                ReminderHelper.Remind(UserId);
+            ReminderHelper?.Remind(UserId, IslandId);
         }
 
         public void SendEtumrepEmbed(PokeRoutineExecutor<T> routine, PokeTradeDetail<T> info, IReadOnlyList<PA8> pkms) { }

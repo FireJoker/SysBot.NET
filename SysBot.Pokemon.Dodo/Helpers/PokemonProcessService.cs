@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Net.Http;
 using DoDo.Open.Sdk.Models.Bots;
 using DoDo.Open.Sdk.Models.Events;
@@ -57,16 +56,16 @@ namespace SysBot.Pokemon.Dodo
                 if (content.Contains("取消"))
                 {
                     var result = DodoBot<TP>.Info.ClearTrade(ulong.Parse(eventBody.DodoSourceId));
-                    DodoBot<TP>.SendPersonalMessage(eventBody.DodoSourceId, $"{GetClearTradeMessage(result)}", eventBody.IslandSourceId);
+                    DodoBot<TP>.SendPersonalMessage(eventBody.DodoSourceId, eventBody.IslandSourceId, $"{GetClearTradeMessage(result)}");
                 }
                 else if (content.Contains("位置"))
                 {
                     var result = DodoBot<TP>.Info.CheckPosition(ulong.Parse(eventBody.DodoSourceId));
-                    DodoBot<TP>.SendPersonalMessage(eventBody.DodoSourceId, $"{GetQueueCheckResultMessage(result)}", eventBody.IslandSourceId);
+                    DodoBot<TP>.SendPersonalMessage(eventBody.DodoSourceId, eventBody.IslandSourceId, $"{GetQueueCheckResultMessage(result)}");
                 }
                 else
                 {
-                    DodoBot<TP>.SendPersonalMessage(eventBody.DodoSourceId, $"发送位置可查询当前位置\n发送取消可取消排队", eventBody.IslandSourceId);
+                    DodoBot<TP>.SendPersonalMessage(eventBody.DodoSourceId, eventBody.IslandSourceId, $"发送位置可查询当前位置\n发送取消可取消排队");
                 }
             }
         }

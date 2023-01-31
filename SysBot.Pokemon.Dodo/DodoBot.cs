@@ -1,13 +1,11 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using DoDo.Open.Sdk.Models;
-using DoDo.Open.Sdk.Models.Islands;
 using DoDo.Open.Sdk.Models.Messages;
 using DoDo.Open.Sdk.Models.Personals;
-using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Models.ChannelMessages;
 using DoDo.Open.Sdk.Services;
 using PKHeX.Core;
+using System.Security.Policy;
 
 namespace SysBot.Pokemon.Dodo
 {
@@ -125,16 +123,33 @@ namespace SysBot.Pokemon.Dodo
             });
         }
 
-        public static void SendPersonalMessage(string dodoId, string message, string islandSourceId)
+        public static void SendPersonalMessage(string dodoId, string islandSourceId, string message)
         {
             if (string.IsNullOrEmpty(message)) return;
             OpenApiService.SetPersonalMessageSend(new SetPersonalMessageSendInput<MessageBodyText>
             {
-                IslandSourceId = islandSourceId,
                 DodoSourceId = dodoId,
+                IslandSourceId = islandSourceId,
                 MessageBody = new MessageBodyText
                 {
                     Content = message
+                }
+            });
+        }
+
+        public static void SendPersonalMessagePicture(string dodoId, string islandSourceId, string url)
+        {
+            if (string.IsNullOrEmpty(url)) return;
+            OpenApiService.SetPersonalMessageSend(new SetPersonalMessageSendInput<MessageBodyPicture>
+            {
+                DodoSourceId = dodoId,
+                IslandSourceId = islandSourceId,
+                MessageBody = new MessageBodyPicture
+                {
+                    Url = url,
+                    Width = 1280,
+                    Height = 720,
+                    IsOriginal = 1
                 }
             });
         }
