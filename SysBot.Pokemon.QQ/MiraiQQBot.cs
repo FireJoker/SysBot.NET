@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Mirai.Net.Utils.Scaffolds;
 using System.Text.RegularExpressions;
 using Mirai.Net.Data.Events.Concretes.Group;
+using System.Net.Http;
 
 namespace SysBot.Pokemon.QQ
 {
@@ -219,7 +220,8 @@ namespace SysBot.Pokemon.QQ
                 var f = await FileManager.GetFileAsync(groupId, fileMessage.FileId, true);
 
                 string url = f.DownloadInfo.Url;
-                byte[] data = new System.Net.WebClient().DownloadData(url);
+                using var client = new HttpClient();
+                byte[] data = client.GetByteArrayAsync(f.DownloadInfo.Url).Result;
                 switch (operationType)
                 {
                     case "pk8" or "pb8" or "pk9" when data.Length != 344:
@@ -341,9 +343,7 @@ namespace SysBot.Pokemon.QQ
                 else
                     await MessageManager.SendGroupMessageAsync(GroupId, new AtMessage(qq).Append(message));
             }
-#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
             {
                 LogUtil.LogSafe(ex, nameof(MiraiQQBot<T>));
                 LogUtil.LogError($"{ex.Message}", nameof(MiraiQQBot<T>));
