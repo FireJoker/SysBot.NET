@@ -4,7 +4,6 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net7.0-windows</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-	    <Platform>x64</Platform>
     <UseWindowsForms>true</UseWindowsForms>
     <PackageId>SysBot.Pokemon.WinForms</PackageId>
     <Company>Project Pokémon</Company>
@@ -15,7 +14,8 @@
     <StartupObject>SysBot.Pokemon.WinForms.Program</StartupObject>
     <AssemblyName>SysBot</AssemblyName>
     <Version>01.00.00</Version>
-	  <Nullable>enable</Nullable>
+      <Platform>x64</Platform>
+    <Nullable>enable</Nullable>
     <NeutralLanguage>en</NeutralLanguage>
     <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
   </PropertyGroup>

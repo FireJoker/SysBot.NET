@@ -41,8 +41,8 @@ namespace SysBot.Pokemon.Discord
                 $"- {Format.Bold("Runtime")}: {RuntimeInformation.FrameworkDescription} {RuntimeInformation.ProcessArchitecture} " +
                 $"({RuntimeInformation.OSDescription} {RuntimeInformation.OSArchitecture})\n" +
                 $"- {Format.Bold("Buildtime")}: {GetBuildTime()}\n" +
-                $"- {Format.Bold("Core")}: {GetCoreVersion()}\n" +
-                $"- {Format.Bold("AutoLegality")}: {GetALMVersion()}\n"
+                $"- {Format.Bold("Core")}: {GetCoreDate()}\n" +
+                $"- {Format.Bold("AutoLegality")}: {GetALMDate()}\n"
                 );
 
             builder.AddField("Stats",
@@ -58,20 +58,33 @@ namespace SysBot.Pokemon.Discord
 
         private static string GetUptime() => (DateTime.Now - Process.GetCurrentProcess().StartTime).ToString(@"dd\.hh\:mm\:ss");
         private static string GetHeapSize() => Math.Round(GC.GetTotalMemory(true) / (1024.0 * 1024.0), 2).ToString(CultureInfo.CurrentCulture);
-        private static string GetBuildTime() => File.GetLastWriteTime(AppContext.BaseDirectory).ToString(@"yy-MM-dd\.hh\:mm");
-        public static string GetCoreVersion() => GetAssemblyVersion("PKHeX.Core");
-        public static string GetALMVersion() => GetAssemblyVersion("PKHeX.Core.AutoMod");
+        private static string GetBuildTime() => GetAssemblyDate("SysBot.Base");
+        public static string GetCoreDate() => GetAssemblyDate("PKHeX.Core");
+        public static string GetALMDate() => GetAssemblyDate("PKHeX.Core.AutoMod");
 
-        private static string GetAssemblyVersion(string assemblyName)
+        private static string GetAssemblyDate(string assemblyName)
         {
+            var prefix = "+T";
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             foreach (var assembly in assemblies)
             {
-                var split = assembly.FullName?.Split(',');
-                if (split is not null && split.Length >= 2 && split[0] == assemblyName)
-                    return split[1].Replace("Version=", "");
+                if (assembly.GetName().Name == assemblyName)
+                {
+                    var attribute = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+                    if (attribute is not null)
+                    {
+                        var version = attribute.InformationalVersion;
+                        var index = version.IndexOf(prefix);
+                        if (index > 0)
+                        {
+                            version = version[(index + prefix.Length)..];
+                            if (DateTime.TryParseExact(version, "yyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var buildTime))
+                                return buildTime.ToLocalTime().ToString(@"yy-MM-dd\.hh\:mm");
+                        }
+                    }
+                }
             }
-            return "Unknown.";
+            return "Unknown";
         }
     }
 }

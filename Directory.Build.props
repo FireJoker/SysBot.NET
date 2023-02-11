@@ -4,6 +4,7 @@
     <LangVersion>11</LangVersion>
     <Nullable>enable</Nullable>
     <NeutralLanguage>en</NeutralLanguage>
+    <SourceRevisionId>T$([System.DateTime]::UtcNow.ToString("yyMMddHHmmss"))</SourceRevisionId>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
