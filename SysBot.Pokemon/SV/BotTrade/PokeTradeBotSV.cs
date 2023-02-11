@@ -6,6 +6,7 @@ using System;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsetsSV;
 
@@ -384,40 +385,40 @@ namespace SysBot.Pokemon
                 return result;
             }
 
-            // Wait for user input...
-            var offered = await ReadUntilPresent(TradePartnerOfferedOffset, 25_000, 1_000, BoxFormatSlotSize, token).ConfigureAwait(false);
-            var oldEC = await SwitchConnection.ReadBytesAbsoluteAsync(TradePartnerOfferedOffset, 8, token).ConfigureAwait(false);
-            if (offered == null || offered.Species < 1 || !offered.ChecksumValid)
-            {
-                Log("Trade ended because a valid Pokémon was not offered.");
-                await ExitTradeToPortal(false, token).ConfigureAwait(false);
-                return PokeTradeResult.NoPokemonDetected;
-            }
+                    // Wait for user input...
+                    var offered = await ReadUntilPresent(TradePartnerOfferedOffset, 25_000, 1_000, BoxFormatSlotSize, token).ConfigureAwait(false);
+                    var oldEC = await SwitchConnection.ReadBytesAbsoluteAsync(TradePartnerOfferedOffset, 8, token).ConfigureAwait(false);
+                    if (offered == null || offered.Species < 1 || !offered.ChecksumValid)
+                    {
+                        Log("Trade ended because a valid Pokémon was not offered.");
+                        await ExitTradeToPortal(false, token).ConfigureAwait(false);
+                        return PokeTradeResult.NoPokemonDetected;
+                    }
 
-            PokeTradeResult update;
-            var trainer = new PartnerDataHolder(0, tradePartner.OT, tradePartner.DisplayTID.ToString("D6"));
-            (toSend, update) = await GetEntityToSend(sav, poke, offered, oldEC, toSend, trainer, token).ConfigureAwait(false);
-            if (update != PokeTradeResult.Success)
-            {
-                await ExitTradeToPortal(false, token).ConfigureAwait(false);
-                return update;
-            }
+                    PokeTradeResult update;
+                    var trainer = new PartnerDataHolder(0, tradePartner.OT, tradePartner.DisplayTID.ToString("D6"));
+                    (toSend, update) = await GetEntityToSend(sav, poke, offered, oldEC, toSend, trainer, token).ConfigureAwait(false);
+                    if (update != PokeTradeResult.Success)
+                    {
+                        await ExitTradeToPortal(false, token).ConfigureAwait(false);
+                        return update;
+                    }
 
-            Log("Confirming trade.");
-            var tradeResult = await ConfirmAndStartTrading(poke, token).ConfigureAwait(false);
-            if (tradeResult != PokeTradeResult.Success)
-            {
-                await ExitTradeToPortal(false, token).ConfigureAwait(false);
-                return tradeResult;
-            }
+                    Log("Confirming trade.");
+                    var tradeResult = await ConfirmAndStartTrading(poke, token).ConfigureAwait(false);
+                    if (tradeResult != PokeTradeResult.Success)
+                    {
+                        await ExitTradeToPortal(false, token).ConfigureAwait(false);
+                        return tradeResult;
+                    }
 
-            if (token.IsCancellationRequested)
-            {
-                StartFromOverworld = true;
-                LastTradeDistributionFixed = false;
-                await ExitTradeToPortal(false, token).ConfigureAwait(false);
-                return PokeTradeResult.RoutineCancel;
-            }
+                    if (token.IsCancellationRequested)
+                    {
+                        StartFromOverworld = true;
+                        LastTradeDistributionFixed = false;
+                        await ExitTradeToPortal(false, token).ConfigureAwait(false);
+                        return PokeTradeResult.RoutineCancel;
+                    }
 
             // Trade was Successful!
             var received = await ReadPokemon(BoxStartOffset, BoxFormatSlotSize, token).ConfigureAwait(false);
@@ -1072,7 +1073,7 @@ namespace SysBot.Pokemon
                 return (offered, PokeTradeResult.TrainerRequestBad);
             }
 
-            var clone = (PK9)offered.Clone();
+            var clone = offered.Clone();
             if (Hub.Config.Legality.ResetHOMETracker)
                 clone.Tracker = 0;
 
@@ -1165,42 +1166,38 @@ namespace SysBot.Pokemon
 
         private async Task<bool> SetBoxPkmWithSwappedIDDetailsSV(PK9 toSend, TradeMyStatus tradePartner, SAV9SV sav, CancellationToken token)
         {
+            // Handle Ditto
             if (toSend.Species == (ushort)Species.Ditto)
             {
                 Log($"Do nothing to trade Pokemon, since pokemon is Ditto");
                 return false;
             }
 
-            var cln = (PK9)toSend.Clone();
+            var cln = toSend.Clone();
             cln.OT_Gender = tradePartner.Gender;
             cln.TrainerTID7 = (uint)Math.Abs(tradePartner.DisplayTID);
             cln.TrainerSID7 = (uint)Math.Abs(tradePartner.DisplaySID);
             cln.Language = tradePartner.Language;
             cln.OT_Name = tradePartner.OT;
-            //cln.Version = tradePartner.Game;
-            //cln.ClearNickname();
 
-            if (toSend.IsEgg == false)
+            // Handle Koraidon/Miraidon
+            if (toSend.Species == (ushort)Species.Koraidon)
             {
-                // Handle Koraidon/Miraidon
-                if (toSend.Species == (ushort)Species.Koraidon)
-                {
-                    cln.Version = 50;
-                    Log($"Sending Koraidon，force game version as Scarlet");
-
-                }
-                else if (toSend.Species == (ushort)Species.Miraidon)
-                {
-                    cln.Version = 51;
-                    Log($"Sending Miraidon，force game version as Violet");
-                }
-                else
-                {
-                    cln.Version = tradePartner.Game;
-                }
-                cln.ClearNickname();
+                cln.Version = (int)GameVersion.SL;
+                Log($"Sending Koraidon，force game version as Scarlet");
             }
-            else // Handle egg
+            else if (toSend.Species == (ushort)Species.Miraidon)
+            {
+                cln.Version = (int)GameVersion.VL;
+                Log($"Sending Miraidon，force game version as Violet");
+            }
+            else
+            {
+                cln.Version = tradePartner.Game;
+            }
+
+            // Handle egg
+            if (toSend.IsEgg == true)
             {
                 cln.IsNicknamed = true;
                 cln.Nickname = tradePartner.Language switch
@@ -1216,13 +1213,19 @@ namespace SysBot.Pokemon
                 };
                 Log($"Sending Egg, change nickname as egg based on language");
             }
-
-            if (toSend.Met_Location == Locations.TeraCavern9 && toSend.IsShiny)
+            else
             {
-                cln.PID = (((uint)(cln.TID16 ^ cln.SID16) ^ (cln.PID & 0xFFFF) ^ 1u) << 16) | (cln.PID & 0xFFFF);
+                cln.ClearNickname();
             }
-            else if (toSend.IsShiny)
-                cln.SetShiny();
+
+            // Handle shiny
+            if (toSend.IsShiny)
+            {
+                if (toSend.Met_Location == Locations.TeraCavern9)
+                    cln.PID = (((uint)(cln.TID16 ^ cln.SID16) ^ (cln.PID & 0xFFFF) ^ 1u) << 16) | (cln.PID & 0xFFFF);
+                else
+                    cln.SetShiny();
+            }
 
             cln.RefreshChecksum();
 
