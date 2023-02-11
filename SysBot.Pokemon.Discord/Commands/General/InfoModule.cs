@@ -41,8 +41,8 @@ namespace SysBot.Pokemon.Discord
                 $"- {Format.Bold("Runtime")}: {RuntimeInformation.FrameworkDescription} {RuntimeInformation.ProcessArchitecture} " +
                 $"({RuntimeInformation.OSDescription} {RuntimeInformation.OSArchitecture})\n" +
                 $"- {Format.Bold("Buildtime")}: {GetBuildTime()}\n" +
-                $"- {Format.Bold("Core")}: {GetCoreDate()}\n" +
-                $"- {Format.Bold("AutoLegality")}: {GetALMDate()}\n"
+                $"- {Format.Bold("Core")}: {GetCoreVersion()}\n" +
+                $"- {Format.Bold("AutoLegality")}: {GetALMVersion()}\n"
                 );
 
             builder.AddField("Stats",
@@ -58,27 +58,20 @@ namespace SysBot.Pokemon.Discord
 
         private static string GetUptime() => (DateTime.Now - Process.GetCurrentProcess().StartTime).ToString(@"dd\.hh\:mm\:ss");
         private static string GetHeapSize() => Math.Round(GC.GetTotalMemory(true) / (1024.0 * 1024.0), 2).ToString(CultureInfo.CurrentCulture);
+        private static string GetBuildTime() => File.GetLastWriteTime(AppContext.BaseDirectory).ToString(@"yy-MM-dd\.hh\:mm");
+        public static string GetCoreVersion() => GetAssemblyVersion("PKHeX.Core");
+        public static string GetALMVersion() => GetAssemblyVersion("PKHeX.Core.AutoMod");
 
-        private static string GetBuildTime()
+        private static string GetAssemblyVersion(string assemblyName)
         {
-            var assembly = Assembly.GetEntryAssembly();
-            if (assembly == null)
-                return "Unknown";
-            return File.GetLastWriteTime(assembly.Location).ToString(@"yy-MM-dd\.hh\:mm");
-        }
-
-        public static string GetCoreDate() => GetDateOfDll("PKHeX.Core.dll");
-        public static string GetALMDate() => GetDateOfDll("PKHeX.Core.AutoMod.dll");
-
-        private static string GetDateOfDll(string dll)
-        {
-            var assembly = Assembly.GetEntryAssembly();
-            if (assembly == null)
-                return "Unknown";
-            var folder = Path.GetDirectoryName(assembly.Location);
-            var path = Path.Combine(folder ?? "", dll);
-            var date = File.GetLastWriteTime(path);
-            return date.ToString(@"yy-MM-dd\.hh\:mm");
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            foreach (var assembly in assemblies)
+            {
+                var split = assembly.FullName?.Split(',');
+                if (split is not null && split.Length >= 2 && split[0] == assemblyName)
+                    return split[1].Replace("Version=", "");
+            }
+            return "Unknown.";
         }
     }
 }

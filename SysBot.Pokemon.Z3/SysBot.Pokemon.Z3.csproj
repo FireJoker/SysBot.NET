@@ -19,7 +19,7 @@
         <PackageReference Include="Microsoft.Z3" Version="4.12.0" />
       </ItemGroup>
     </When>
-    
+
     <When Condition=" '$(Platform)' == 'x86' OR $(RuntimeIdentifier.EndsWith('x86')) ">
       <!-- x86 specific references -->
       <ItemGroup>

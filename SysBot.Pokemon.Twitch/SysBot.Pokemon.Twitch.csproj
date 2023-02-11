@@ -1,19 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <LangVersion>11</LangVersion>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="PKHeX.Core" Version="23.1.30" />
     <PackageReference Include="TwitchLib.Client" Version="3.3.1" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
     <ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
   </ItemGroup>
-
 </Project>

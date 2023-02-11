@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net7.0-windows</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	    <Platform>x64</Platform>
     <UseWindowsForms>true</UseWindowsForms>
     <PackageId>SysBot.Pokemon.WinForms</PackageId>
     <Company>Project Pokémon</Company>
@@ -14,20 +15,11 @@
     <StartupObject>SysBot.Pokemon.WinForms.Program</StartupObject>
     <AssemblyName>SysBot</AssemblyName>
     <Version>01.00.00</Version>
-    <Platforms>x64</Platforms>
+	  <Nullable>enable</Nullable>
+    <NeutralLanguage>en</NeutralLanguage>
     <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <DebugType>portable</DebugType>
-    <EmbedAllSources>true</EmbedAllSources>
-    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
-    <PublishReadyToRun>true</PublishReadyToRun>
-    <PublishSingleFile>true</PublishSingleFile>
-    <PublishTrimmed>false</PublishTrimmed>
-    <SelfContained>false</SelfContained>
-  </PropertyGroup>
-  
+	
   <ItemGroup>
     <PackageReference Include="PKHeX.Core" Version="23.1.30" />
     <PackageReference Include="System.Resources.Extensions" Version="7.0.0" />
