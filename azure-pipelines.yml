@@ -2,12 +2,9 @@
 # Build and run tests for .NET Desktop or Windows classic desktop solutions.
 # Add steps that publish symbols, save build artifacts, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/apps/windows/dot-net
-
 trigger:
 - self_used
-
 pr: none
-
 pool:
   name: Azure Pipelines
   vmImage: 'windows-2022'
@@ -17,30 +14,28 @@ pool:
 
 variables:
   Solution: '**/*.sln'
+  Project: '**/SysBot.Pokemon.WinForms.csproj'
   Platform: 'x64'
   Configuration: 'Release'
 
 steps:
 - task: NuGetToolInstaller@1
+  inputs:
+    versionSpec: '5.8.0'
 
 - task: NuGetCommand@2
   inputs:
     command: 'restore'
-    restoreSolution: '**/*.sln'
-    
-- task: DotNetCoreCLI@2
-  inputs:
-    command: 'restore'
+    restoreSolution: '$(Solution)'
 
 - task: VSBuild@1
   inputs:
-    solution: '$(Solution)'
-    platform: '$(Platform)'
-    configuration: '$(Configuration)'
-
-- task: PublishBuildArtifacts@1
-  displayName: 'Publish Artifact: SysBot-x64'
+    solution: '$(Project)'
+    msbuildArgs: '/t:restore;rebuild;publish 
+    /p:Configuration=$(Configuration);Platform=$(Platform);PublishSingleFile=true;OutputPath=$(Build.ArtifactStagingDirectory)\'
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish Artifact: ForkBot-x64'
   inputs:
-    PathtoPublish: 'SysBot.Pokemon.WinForms\bin\x64\Release\net7.0-windows\win-x64'
-    ArtifactName: SysBot-x64
-  condition: succeededOrFailed()
+    TargetPath: '$(Build.ArtifactStagingDirectory)\publish\'
+    ArtifactName: ForkBot-x64
+  condition: succeeded()
