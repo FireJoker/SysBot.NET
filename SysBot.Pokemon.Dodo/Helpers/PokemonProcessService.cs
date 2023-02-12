@@ -3,10 +3,9 @@ using System.Net.Http;
 using DoDo.Open.Sdk.Models.Bots;
 using DoDo.Open.Sdk.Models.Events;
 using DoDo.Open.Sdk.Models.Messages;
-using DoDo.Open.Sdk.Models.Personals;
-using DoDo.Open.Sdk.Models.Channels;
 using DoDo.Open.Sdk.Services;
 using PKHeX.Core;
+using PKHeX.Core.Enhancements;
 using SysBot.Base;
 
 namespace SysBot.Pokemon.Dodo
@@ -16,7 +15,7 @@ namespace SysBot.Pokemon.Dodo
         private readonly OpenApiService _openApiService;
         private static readonly string LogIdentity = "DodoBot";
         private readonly string _channelId;
-        private string _botDodoSourceId;
+        private string _botDodoSourceId = default!;
 
         public PokemonProcessService(OpenApiService openApiService, string channelId)
         {
@@ -83,7 +82,7 @@ namespace SysBot.Pokemon.Dodo
 
                 if (!ValidFileSize(messageBodyFile.Size ?? 0) || !ValidFileName(messageBodyFile.Name))
                 {
-                    DodoBot<TP>.SendChannelMessage("非法请求，试试群文件吧\n或者发送帮助以查看帮助", eventBody.ChannelId);
+                    DodoBot<TP>.SendChannelMessage("非法文件，试试群文件\n或者发送帮助以查看帮助", eventBody.ChannelId);
                     return;
                 }
                 using var client = new HttpClient();
@@ -120,11 +119,21 @@ namespace SysBot.Pokemon.Dodo
                 DodoHelper<TP>.StartClone(eventBody.DodoSourceId, eventBody.Personal.NickName, eventBody.ChannelId, eventBody.IslandSourceId);
                 return;
             }
-            else if (content.Trim().StartsWith("seed"))
+            else if (content.Trim().Contains("+"))
             {
-                DodoHelper<TP>.StartDump(eventBody.DodoSourceId, eventBody.Personal.NickName, eventBody.ChannelId, eventBody.IslandSourceId);
+                DodoHelper<TP>.StartMultiTrade(content.Trim(), eventBody.DodoSourceId, eventBody.Personal.NickName, eventBody.ChannelId, eventBody.IslandSourceId);
                 return;
             }
+            else if (content.Trim().Contains("队伍"))
+            {
+                DodoHelper<TP>.StartTeamTrade(content.Replace("队伍", "").Trim(), eventBody.DodoSourceId, eventBody.Personal.NickName, eventBody.ChannelId, eventBody.IslandSourceId);
+                return;
+            }
+            //else if (content.Trim().StartsWith("seed"))
+            //{
+            //    DodoHelper<TP>.StartDump(eventBody.DodoSourceId, eventBody.Personal.NickName, eventBody.ChannelId, eventBody.IslandSourceId);
+            //    return;
+            //}
             //else if (content.Trim().StartsWith("dump"))
             //{
             //    DodoHelper<TP>.StartDump(eventBody.DodoSourceId, eventBody.Personal.NickName, eventBody.ChannelId, eventBody.IslandSourceId);
@@ -210,12 +219,12 @@ namespace SysBot.Pokemon.Dodo
                     || typeof(TP) == typeof(PK9) && fileName.EndsWith("pk9", StringComparison.OrdinalIgnoreCase));
         }
 
-        private static PKM GetPKM(byte[] bytes)
+        private static PKM? GetPKM(byte[] bytes)
         {
             if (typeof(TP) == typeof(PK8)) return new PK8(bytes);
-            if (typeof(TP) == typeof(PB8)) return new PB8(bytes);
-            if (typeof(TP) == typeof(PA8)) return new PA8(bytes);
-            if (typeof(TP) == typeof(PK9)) return new PK9(bytes);
+            else if (typeof(TP) == typeof(PB8)) return new PB8(bytes);
+            else if (typeof(TP) == typeof(PA8)) return new PA8(bytes);
+            else if (typeof(TP) == typeof(PK9)) return new PK9(bytes);
             return null;
         }
 

@@ -2,8 +2,6 @@
 using SysBot.Base;
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Threading.Channels;
 
 namespace SysBot.Pokemon.Dodo
 {

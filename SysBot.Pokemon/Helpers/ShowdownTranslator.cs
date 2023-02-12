@@ -36,8 +36,9 @@ namespace SysBot.Pokemon
                     // Showdown 文本差异，29-尼多兰F，32-尼多朗M，876-爱管侍，
                     if (candidateSpecieNo is (ushort)Species.NidoranF) result += "(Nidoran-F)";
                     else if (candidateSpecieNo is (ushort)Species.NidoranM) result += "(Nidoran-M)";
-                    else if ((candidateSpecieNo is (ushort)Species.Indeedee) && zh.Contains('母')) 
+                    else if (candidateSpecieNo is (ushort)Species.Indeedee && zh.Contains('母')) 
                         result += $"({GameStringsEn.Species[candidateSpecieNo]}-F)";
+                    
                     // 识别地区形态
                     else if (zh.Contains("形态"))
                     {
@@ -58,8 +59,9 @@ namespace SysBot.Pokemon
                     // Showdown 文本差异，29-尼多兰F，32-尼多朗M，678-超能妙喵，876-爱管侍，902-幽尾玄鱼, 916-飘香豚
                     if (candidateSpecieNo is (ushort)Species.NidoranF) result = "Nidoran-F";
                     else if (candidateSpecieNo is (ushort)Species.NidoranM) result = "Nidoran-M";
-                    else if ((candidateSpecieNo is (ushort)Species.Meowstic or (ushort)Species.Indeedee or (ushort)Species.Basculegion or (ushort)Species.Oinkologne) && zh.Contains("母")) 
+                    else if (candidateSpecieNo is (ushort)Species.Meowstic or (ushort)Species.Indeedee or (ushort)Species.Basculegion or (ushort)Species.Oinkologne && zh.Contains("母")) 
                         result += $"({GameStringsEn.Species[candidateSpecieNo]}-F)";
+                    
                     // 识别地区形态
                     else if (zh.Contains("形态"))
                     {
@@ -174,8 +176,7 @@ namespace SysBot.Pokemon
                 result += "\nOT: AutoOT";
                 zh = zh.ToUpper().Replace("自ID", "");
             }
-
-            if (zh.Contains("异国"))
+            else if (zh.Contains("异国"))
             {
                 result += "\nLanguage: Italian";
                 zh = zh.Replace("异国", "");
@@ -224,15 +225,30 @@ namespace SysBot.Pokemon
                 result += "\nIVs: 31 HP / 0 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe";
                 zh = Regex.Replace(zh, "5V0A|5v0a", "");
             }
+            else if (zh.ToUpper().Contains("5V0攻"))
+            {
+                result += "\nIVs: 31 HP / 0 Atk / 31 Def / 31 SpA / 31 SpD / 31 Spe";
+                zh = Regex.Replace(zh, "5V0攻|5v0攻", "");
+            }
             else if (zh.ToUpper().Contains("5V0S"))
             {
                 result += "\nIVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 0 Spe";
                 zh = Regex.Replace(zh, "5V0S|5v0s", "");
             }
+            else if (zh.ToUpper().Contains("5V0速"))
+            {
+                result += "\nIVs: 31 HP / 31 Atk / 31 Def / 31 SpA / 31 SpD / 0 Spe";
+                zh = Regex.Replace(zh, "5V0速|5v0速", "");
+            }
             else if (zh.ToUpper().Contains("4V0A0S"))
             {
                 result += "\nIVs: 31 HP / 0 Atk / 31 Def / 31 SpA / 31 SpD / 0 Spe";
                 zh = Regex.Replace(zh, "4V0A0S|4v0a0s", "");
+            }
+            else if (zh.ToUpper().Contains("4V0攻0速"))
+            {
+                result += "\nIVs: 31 HP / 0 Atk / 31 Def / 31 SpA / 31 SpD / 0 Spe";
+                zh = Regex.Replace(zh, "4V0攻0速|4v0攻0速", "");
             }
 
             // 添加努力值
@@ -412,7 +428,7 @@ namespace SysBot.Pokemon
             // 添加全回忆技能 (不支持BDSP)
             if (zh.Contains("全技能"))
             {
-                if ((typeof(T) == typeof(PK9) || typeof(T) == typeof(PK8)))
+                if (typeof(T) == typeof(PK9) || typeof(T) == typeof(PK8))
                 {
                     result += "\n.RelearnMoves=$suggestAll";
                 }
@@ -424,7 +440,7 @@ namespace SysBot.Pokemon
             }
             else if (zh.Contains("全招式"))
             {
-                if ((typeof(T) == typeof(PK9) || typeof(T) == typeof(PK8)))
+                if (typeof(T) == typeof(PK9) || typeof(T) == typeof(PK8))
                 {
                     result += "\n.RelearnMoves=$suggestAll";
                 }

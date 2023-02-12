@@ -1,17 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <LangVersion>11</LangVersion>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
 	<ItemGroup>
+    <PackageReference Include="PKHeX.Core" Version="23.1.30" />
     <PackageReference Include="DoDo.Open.Sdk" Version="1.7.0" />
   </ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\SysBot.Base\SysBot.Base.csproj" />
 		<ProjectReference Include="..\SysBot.Pokemon\SysBot.Pokemon.csproj" />
 	</ItemGroup>
-  
+
+  <ItemGroup>
+    <Reference Include="PKHeX.Core.Enhancements">
+      <HintPath>deps\PKHeX.Core.Enhancements.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

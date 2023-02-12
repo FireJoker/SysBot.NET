@@ -50,6 +50,9 @@ namespace SysBot.Pokemon
         [Category(TradeConfig), Description("Enter either direct picture or gif links, or file names with extensions. For example, file1.png, file2.jpg, etc.")]
         public string MemeFileNames { get; set; } = string.Empty;
 
+        [Category(TradeCode), Description("Maximum pokemons of single trade. Batch mode will be closed if this configuration is less than 1")]
+        public int MaxPkmsPerTrade { get; set; } = 1;
+
         /// <summary>
         /// Gets a random trade code based on the range settings.
         /// </summary>

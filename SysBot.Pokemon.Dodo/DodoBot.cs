@@ -1,11 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using DoDo.Open.Sdk.Models;
+using DoDo.Open.Sdk.Models.ChannelMessages;
+using DoDo.Open.Sdk.Models.Islands;
 using DoDo.Open.Sdk.Models.Messages;
 using DoDo.Open.Sdk.Models.Personals;
-using DoDo.Open.Sdk.Models.ChannelMessages;
 using DoDo.Open.Sdk.Services;
 using PKHeX.Core;
-using System.Security.Policy;
 
 namespace SysBot.Pokemon.Dodo
 {
@@ -14,9 +15,9 @@ namespace SysBot.Pokemon.Dodo
         private static PokeTradeHub<T> Hub = default!;
         internal static TradeQueueInfo<T> Info => Hub.Queues.Info;
 
-        public static OpenApiService OpenApiService;
+        public static OpenApiService OpenApiService = default!;
 
-        private static DodoSettings Settings;
+        private static DodoSettings Settings = default!;
 
         public DodoBot(DodoSettings settings, PokeTradeHub<T> hub)
         {
@@ -126,6 +127,10 @@ namespace SysBot.Pokemon.Dodo
         public static void SendPersonalMessage(string dodoId, string islandSourceId, string message)
         {
             if (string.IsNullOrEmpty(message)) return;
+            if (string.IsNullOrWhiteSpace(islandSourceId))
+            {
+                islandSourceId = OpenApiService.GetIslandList(new GetIslandListInput()).FirstOrDefault()?.IslandSourceId ?? "";
+            }
             OpenApiService.SetPersonalMessageSend(new SetPersonalMessageSendInput<MessageBodyText>
             {
                 DodoSourceId = dodoId,

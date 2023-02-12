@@ -1,6 +1,7 @@
 ﻿using PKHeX.Core;
 using System;
 using System.Threading;
+using System.Collections.Generic;
 
 namespace SysBot.Pokemon
 {
@@ -42,6 +43,9 @@ namespace SysBot.Pokemon
 
         /// <summary> Indicates if the trade data is currently being traded. </summary>
         public bool IsProcessing;
+
+        /// <summary> Customized trade parameters. </summary>
+        public Dictionary<string, object> Context = new();
 
         public PokeTradeDetail(TPoke pkm, PokeTradeTrainerInfo info, IPokeTradeNotifier<TPoke> notifier, PokeTradeType type, int code, bool favored = false)
         {
