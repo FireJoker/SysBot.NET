@@ -4,6 +4,8 @@ using Discord.WebSocket;
 using Discord.Net;
 using PKHeX.Core;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SysBot.Pokemon.Discord
 {
@@ -11,7 +13,7 @@ namespace SysBot.Pokemon.Discord
     {
         private const uint MaxTradeCode = 9999_9999;
 
-        public static async Task AddToQueueAsync(SocketCommandContext context, int code, string trainer, RequestSignificance sig, T trade, PokeRoutineType routine, PokeTradeType type, SocketUser trader, int catchID = 0)
+        public static async Task AddToQueueAsync(SocketCommandContext context, int code, string trainer, RequestSignificance sig, T trade, bool isAutoOT, PokeRoutineType routine, PokeTradeType type, SocketUser trader, int catchID = 0)
         {
             if ((uint)code > MaxTradeCode)
             {
@@ -25,7 +27,7 @@ namespace SysBot.Pokemon.Discord
                 IUserMessage test = await trader.SendMessageAsync(helper).ConfigureAwait(false);
 
                 // Try adding
-                var result = AddToTradeQueue(context, trade, code, trainer, sig, routine, type, trader, out var msg, catchID);
+                var result = AddToTradeQueue(context, trade, isAutoOT, code, trainer, sig, routine, type, trader, out var msg, catchID);
 
                 // Notify in channel
                 await context.Channel.SendMessageAsync(msg).ConfigureAwait(false);
@@ -53,10 +55,10 @@ namespace SysBot.Pokemon.Discord
 
         public static async Task AddToQueueAsync(SocketCommandContext context, int code, string trainer, RequestSignificance sig, T trade, PokeRoutineType routine, PokeTradeType type, int catchID = 0)
         {
-            await AddToQueueAsync(context, code, trainer, sig, trade, routine, type, context.User, catchID).ConfigureAwait(false);
+            await AddToQueueAsync(context, code, trainer, sig, trade, false, routine, type, context.User, catchID).ConfigureAwait(false);
         }
 
-        private static bool AddToTradeQueue(SocketCommandContext context, T pk, int code, string trainerName, RequestSignificance sig, PokeRoutineType type, PokeTradeType t, SocketUser trader, out string msg, int catchID = 0)
+        private static bool AddToTradeQueue(SocketCommandContext context, T pk, bool isAutoOT, int code, string trainerName, RequestSignificance sig, PokeRoutineType type, PokeTradeType t, SocketUser trader, out string msg, int catchID = 0)
         {
             var user = trader;
             var userID = user.Id;
@@ -65,6 +67,100 @@ namespace SysBot.Pokemon.Discord
             var trainer = new PokeTradeTrainerInfo(trainerName, userID);
             var notifier = new DiscordTradeNotifier<T>(pk, trainer, code, user, context.Channel);
             var detail = new PokeTradeDetail<T>(pk, trainer, notifier, t, code, sig == RequestSignificance.Favored);
+            detail.Context.Add("AutoOT", isAutoOT);
+            var trade = new TradeEntry<T>(detail, userID, type, name);
+      
+            var hub = SysCord<T>.Runner.Hub;
+            var Info = hub.Queues.Info;
+            var added = Info.AddToTradeQueue(trade, userID, sig == RequestSignificance.Owner);
+
+            if (added == QueueResultAdd.AlreadyInQueue)
+            {
+                msg = "Sorry, you are already in the queue.";
+                return false;
+            }
+
+            if (detail.Type == PokeTradeType.TradeCord)
+                TradeCordHelper<T>.TradeCordTrades.Add(trader.Id, catchID);
+
+            var position = Info.CheckPosition(userID, type);
+
+            var ticketID = "";
+            if (TradeStartModule<T>.IsStartChannel(context.Channel.Id))
+                ticketID = $", unique ID: {detail.ID}";
+
+            var pokeName = "";
+            if ((t == PokeTradeType.Specific || t == PokeTradeType.TradeCord || t == PokeTradeType.SupportTrade || t == PokeTradeType.Giveaway) && pk.Species != 0)
+                pokeName = $" Receiving: {(t == PokeTradeType.SupportTrade && pk.Species != (int)Species.Ditto && pk.HeldItem != 0 ? $"{(Species)pk.Species} ({ShowdownParsing.GetShowdownText(pk).Split('@','\n')[1].Trim()})" : $"{(Species)pk.Species}")}.";
+            msg = $"{user.Mention} - Added to the {type} queue{ticketID}. Current Position: {position.Position}.{pokeName}";
+
+            var botct = Info.Hub.Bots.Count;
+            if (position.Position > botct)
+            {
+                var eta = Info.Hub.Config.Queues.EstimateDelay(position.Position, botct);
+                msg += $" Estimated: {eta:F1} minutes.";
+            }
+            return true;
+        }
+
+        public static async Task AddToQueueAsync(SocketCommandContext context, int code, string trainer, RequestSignificance sig, List<T> trade, PokeRoutineType routine, PokeTradeType type, SocketUser trader, int catchID = 0)
+        {
+            await AddToQueueAsync(context, code, trainer, sig, trade, routine, type, trader, catchID);
+        }
+
+        public static async Task AddToQueueAsync(SocketCommandContext context, int code, string trainer, RequestSignificance sig, List<T> tradeList, List<bool> isAutoOTList, PokeRoutineType routine, PokeTradeType type, SocketUser trader, int catchID = 0)
+        {
+            if ((uint)code > MaxTradeCode)
+            {
+                await context.Channel.SendMessageAsync("Trade code should be 00000000-99999999!").ConfigureAwait(false);
+                return;
+            }
+
+            try
+            {
+                const string helper = "I've added you to the queue! I'll message you here when your trade is starting.";
+                IUserMessage test = await trader.SendMessageAsync(helper).ConfigureAwait(false);
+
+                // Try adding
+                var result = AddToTradeQueue(context, tradeList, isAutoOTList, code, trainer, sig, routine, type, trader, out var msg, catchID);
+
+                // Notify in channel
+                await context.Channel.SendMessageAsync(msg).ConfigureAwait(false);
+                // Notify in PM to mirror what is said in the channel.
+                await trader.SendMessageAsync($"{msg}\nYour trade code will be **{code:0000 0000}**.").ConfigureAwait(false);
+
+                // Clean Up
+                if (result)
+                {
+                    // Delete the user's join message for privacy
+                    if (!context.IsPrivate)
+                        await context.Message.DeleteAsync(RequestOptions.Default).ConfigureAwait(false);
+                }
+                else
+                {
+                    // Delete our "I'm adding you!", and send the same message that we sent to the general channel.
+                    await test.DeleteAsync().ConfigureAwait(false);
+                }
+            }
+            catch (HttpException ex)
+            {
+                await HandleDiscordExceptionAsync(context, trader, ex).ConfigureAwait(false);
+            }
+        }
+
+        private static bool AddToTradeQueue(SocketCommandContext context, List<T> tradeList, List<bool> isAutoOTList, int code, string trainerName, RequestSignificance sig, PokeRoutineType type, PokeTradeType t, SocketUser trader, out string msg, int catchID = 0)
+        {
+            var user = trader;
+            var userID = user.Id;
+            var name = user.Username;
+
+            var pk = tradeList.FirstOrDefault();
+
+            var trainer = new PokeTradeTrainerInfo(trainerName, userID);
+            var notifier = new DiscordTradeNotifier<T>(pk, trainer, code, user, context.Channel);
+            var detail = new PokeTradeDetail<T>(pk, trainer, notifier, t, code, sig == RequestSignificance.Favored);
+            detail.Context.Add("MultiTrade", tradeList);
+            detail.Context.Add("AutoOT", isAutoOTList);
             var trade = new TradeEntry<T>(detail, userID, type, name);
 
             var hub = SysCord<T>.Runner.Hub;
@@ -88,7 +184,7 @@ namespace SysBot.Pokemon.Discord
 
             var pokeName = "";
             if ((t == PokeTradeType.Specific || t == PokeTradeType.TradeCord || t == PokeTradeType.SupportTrade || t == PokeTradeType.Giveaway) && pk.Species != 0)
-                pokeName = $" Receiving: {(t == PokeTradeType.SupportTrade && pk.Species != (int)Species.Ditto && pk.HeldItem != 0 ? $"{(Species)pk.Species} ({ShowdownParsing.GetShowdownText(pk).Split('@','\n')[1].Trim()})" : $"{(Species)pk.Species}")}.";
+                pokeName = $" Receiving: {(t == PokeTradeType.SupportTrade && pk.Species != (int)Species.Ditto && pk.HeldItem != 0 ? $"{(Species)pk.Species} ({ShowdownParsing.GetShowdownText(pk).Split('@', '\n')[1].Trim()})" : $"{(Species)pk.Species}")}.";
             msg = $"{user.Mention} - Added to the {type} queue{ticketID}. Current Position: {position.Position}.{pokeName}";
 
             var botct = Info.Hub.Bots.Count;

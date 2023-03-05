@@ -381,8 +381,8 @@ namespace SysBot.Pokemon
             }
 
             // https://github.com/easyworld/SysBot.NET/commit/8246126cd6b23718673d6cf349e93b31600867d8
-            List<PK9> tradeList = (List<PK9>)poke.Context.GetValueOrDefault("批量", new List<PK9> { toSend });
-            List<bool> autoOTList = (List<bool>)poke.Context.GetValueOrDefault("自ID", new List<bool> { true });
+            List<PK9> tradeList = (List<PK9>)poke.Context.GetValueOrDefault("MultiTrade", new List<PK9> { toSend });
+            List<bool> autoOTList = (List<bool>)poke.Context.GetValueOrDefault("AutoOT", new List<bool> { true });
 
             PK9 received = default!;
             LogUtil.LogInfo($"count:{tradeList.Count}, autoOTList:{String.Join(',', autoOTList)}", nameof(PokeTradeBotSV));
@@ -399,6 +399,16 @@ namespace SysBot.Pokemon
                 if (Hub.Config.Legality.UseTradePartnerInfo && needUseTradePartnerInfo)
                 {
                     await SetBoxPkmWithSwappedIDDetailsSV(pk9, tradePartner, sav, token);
+                }
+
+                if (i > 0)
+                {
+                    tradeOffered = await ReadUntilChanged(TradePartnerOfferedOffset, lastOffered, 25_000, 0_500, false, true, token).ConfigureAwait(false);
+                    if (!tradeOffered)
+                    {
+                        await ExitTradeToPortal(false, token).ConfigureAwait(false);
+                        return PokeTradeResult.NoPokemonDetected;
+                    }
                 }
 
                 // Wait for user input...
@@ -449,6 +459,7 @@ namespace SysBot.Pokemon
 
                 // Only log if we completed the trade.
                 UpdateCountsAndExport(poke, received, pk9);
+                lastOffered = await SwitchConnection.ReadBytesAbsoluteAsync(TradePartnerOfferedOffset, 8, token).ConfigureAwait(false);
             }
 
             // As long as we got rid of our inject in b1s1, assume the trade went through.

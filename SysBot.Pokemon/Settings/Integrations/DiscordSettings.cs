@@ -60,6 +60,9 @@ namespace SysBot.Pokemon
         [Category(Roles), Description("Users with this role are allowed to enter the FixOT queue.")]
         public RemoteControlAccessList RoleCanFixOT { get; set; } = new() { AllowIfEmpty = false };
 
+        [Category(Roles), Description("Users with this role are allowed to enter the MulitTrade queue.")]
+        public RemoteControlAccessList RoleCanMultiTrade { get; set; } = new() { AllowIfEmpty = false };
+
         [Category(Roles), Description("Users with this role are allowed to use SupportTrade.")]
         public RemoteControlAccessList RoleCanSupportTrade { get; set; } = new() { AllowIfEmpty = false };
 
