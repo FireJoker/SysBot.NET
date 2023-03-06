@@ -18,7 +18,8 @@ namespace SysBot.Pokemon.Discord
     {
         private const string detail = "I am an open-source Discord bot powered by PKHeX.Core and other open-source software.";
         private const string repo = "https://github.com/kwsch/SysBot.NET";
-        private const string fork = "https://github.com/Koi-3088/ForkBot.NET";
+        private const string source1 = "https://github.com/Koi-3088/ForkBot.NET";
+        private const string source2 = "https://github.com/easyworld/SysBot.NET";
 
         [Command("info")]
         [Alias("about", "whoami", "owner")]
@@ -34,7 +35,8 @@ namespace SysBot.Pokemon.Discord
 
             builder.AddField("Info",
                 $"- [Original Source Code]({repo})\n" +
-                $"- [This Fork's Source Code]({fork})\n" +
+                $"- [This Fork's Source Code]({source1})\n" +
+                $"- [This Fork's Source Code]({source2})\n" +
                 $"- {Format.Bold("Owner")}: {app.Owner} ({app.Owner.Id})\n" +
                 $"- {Format.Bold("Library")}: Discord.Net ({DiscordConfig.Version})\n" +
                 $"- {Format.Bold("Uptime")}: {GetUptime()}\n" +
@@ -58,9 +60,6 @@ namespace SysBot.Pokemon.Discord
 
         private static string GetUptime() => (DateTime.Now - Process.GetCurrentProcess().StartTime).ToString(@"dd\.hh\:mm\:ss");
         private static string GetHeapSize() => Math.Round(GC.GetTotalMemory(true) / (1024.0 * 1024.0), 2).ToString(CultureInfo.CurrentCulture);
-        private static string GetBuildTime() => GetAssemblyDate("SysBot.Base");
-        public static string GetCoreDate() => GetAssemblyDate("PKHeX.Core");
-        public static string GetALMDate() => GetAssemblyDate("PKHeX.Core.AutoMod");
 
         private static string GetVersionInfo(string assemblyName, bool inclVersion = true)
         {

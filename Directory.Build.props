@@ -5,7 +5,6 @@
     <LangVersion>11</LangVersion>
     <Nullable>enable</Nullable>
     <NeutralLanguage>en</NeutralLanguage>
-
     <SelfContained>false</SelfContained>
     <PackageAsSingleFile>true</PackageAsSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>

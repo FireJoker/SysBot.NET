@@ -633,8 +633,7 @@ namespace SysBot.Pokemon
             await PressAndHold(DDOWN, 1_000, 1_000, token).ConfigureAwait(false);
             await Click(DUP, 0_200, token).ConfigureAwait(false);
             await Click(DUP, 0_200, token).ConfigureAwait(false);
-            if (!Hub.Config.Trade.HasBoughtSVDLC)
-                await Click(DUP, 0_850, token).ConfigureAwait(false);
+            await Click(DUP, 0_850, token).ConfigureAwait(false);
             await Click(A, 1_000, token).ConfigureAwait(false);
 
             return await SetUpPortalCursor(token).ConfigureAwait(false);
