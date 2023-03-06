@@ -19,7 +19,7 @@
     <NeutralLanguage>en</NeutralLanguage>
     <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
   </PropertyGroup>
- 
+
   <ItemGroup>
     <PackageReference Include="PKHeX.Core" Version="23.2.27" />
     <PackageReference Include="System.Resources.Extensions" Version="7.0.0" />
