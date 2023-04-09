@@ -69,6 +69,36 @@ namespace SysBot.Base
             }, token);
         }
 
+        public Task<string> GetBotbaseVersion(CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                Send(SwitchCommand.GetBotbaseVersion(false));
+                byte[] baseBytes = ReadBulkUSB();
+                return Encoding.UTF8.GetString(baseBytes).Trim('\0');
+            }, token);
+        }
+
+        public Task<string> GetGameInfo(string info, CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                Send(SwitchCommand.GetGameInfo(info, false));
+                byte[] baseBytes = ReadBulkUSB();
+                return Encoding.UTF8.GetString(baseBytes).Trim('\0');
+            }, token);
+        }
+
+        public Task<bool> IsProgramRunning(ulong pid, CancellationToken token)
+        {
+            return Task.Run(() =>
+            {
+                Send(SwitchCommand.IsProgramRunning(pid, false));
+                byte[] baseBytes = ReadBulkUSB();
+                return baseBytes.Length == 1 && BitConverter.ToBoolean(baseBytes, 0);
+            }, token);
+        }
+
         public Task<byte[]> ReadRaw(byte[] command, int length, CancellationToken token)
         {
             return Task.Run(() =>
