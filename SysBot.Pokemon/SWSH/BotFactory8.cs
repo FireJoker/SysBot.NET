@@ -17,10 +17,10 @@ namespace SysBot.Pokemon
                 or PokeRoutineType.TradeCord
                 => new PokeTradeBot(Hub, cfg),
 
-            PokeRoutineType.EggFetch => new EggBot(cfg, Hub),
-            PokeRoutineType.FossilBot => new FossilBot(cfg, Hub),
             PokeRoutineType.RaidBot => new RaidBot(cfg, Hub),
             PokeRoutineType.EncounterLine => new EncounterBotLine(cfg, Hub),
+            PokeRoutineType.EggFetch => new EncounterBotEgg(cfg, Hub),
+            PokeRoutineType.FossilBot => new EncounterBotFossil(cfg, Hub),
             PokeRoutineType.Reset => new EncounterBotReset(cfg, Hub),
             PokeRoutineType.Dogbot => new EncounterBotDog(cfg, Hub),
             PokeRoutineType.LairBot => new LairBot(cfg, Hub),
@@ -46,10 +46,10 @@ namespace SysBot.Pokemon
                 or PokeRoutineType.TradeCord
                 => true,
 
-            PokeRoutineType.EggFetch => true,
-            PokeRoutineType.FossilBot => true,
             PokeRoutineType.RaidBot => true,
             PokeRoutineType.EncounterLine => true,
+            PokeRoutineType.EggFetch => true,
+            PokeRoutineType.FossilBot => true,
             PokeRoutineType.Reset => true,
             PokeRoutineType.Dogbot => true,
             PokeRoutineType.LairBot => true,
