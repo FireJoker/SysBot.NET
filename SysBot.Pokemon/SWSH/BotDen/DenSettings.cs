@@ -46,6 +46,9 @@ namespace SysBot.Pokemon
         [Category(DenSkip), Description("Seed to inject. Please disclose seed-injected raids.")]
         public string SeedToInject { get; set; } = string.Empty;
 
+        [Category(DenSkip), Description("Console language. Needed in order to read distribution raid data correctly.")]
+        public ConsoleLanguageParameter ConsoleLanguage { get; set; } = ConsoleLanguageParameter.English;
+
         [Category(DenSkip)]
         [TypeConverter(typeof(DenFiltersCategoryConverter))]
         public class DenFiltersCategory

@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using static SysBot.Base.SwitchOffsetType;
-using System.Linq;
 using System.Text;
 
 namespace SysBot.Base
@@ -66,6 +65,7 @@ namespace SysBot.Base
                 Send(SwitchCommand.GetTitleID(false));
                 byte[] baseBytes = ReadBulkUSB();
                 return BitConverter.ToUInt64(baseBytes, 0).ToString("X16").Trim();
+
             }, token);
         }
 
@@ -124,9 +124,12 @@ namespace SysBot.Base
 
         public Task PointerPoke(byte[] data, IEnumerable<long> jumps, CancellationToken token)
         {
-            return Task.Run(() => Send(SwitchCommand.PointerPoke(jumps, data, false)), token);
+            return Task.Run(() =>
+            {
+                Send(SwitchCommand.PointerPoke(jumps, data, false));
+            }, token);
         }
-
+        
         public Task<ulong> PointerAll(IEnumerable<long> jumps, CancellationToken token)
         {
             return Task.Run(() =>
@@ -134,6 +137,7 @@ namespace SysBot.Base
                 Send(SwitchCommand.PointerAll(jumps, false));
                 byte[] baseBytes = ReadBulkUSB();
                 return BitConverter.ToUInt64(baseBytes, 0);
+
             }, token);
         }
 
@@ -144,16 +148,7 @@ namespace SysBot.Base
                 Send(SwitchCommand.PointerRelative(jumps, false));
                 byte[] baseBytes = ReadBulkUSB();
                 return BitConverter.ToUInt64(baseBytes, 0);
-            }, token);
-        }
 
-
-        public Task<byte[]> Screengrab(CancellationToken token)
-        {
-            return Task.Run(() =>
-            {
-                Send(SwitchCommand.Screengrab(false));
-                return GetScreenshot();
             }, token);
         }
 
@@ -162,31 +157,17 @@ namespace SysBot.Base
             return Task.Run(() =>
             {
                 Send(SwitchCommand.PixelPeek(false));
-                var buffer = ReadBulkUSB();
-                return buffer;
+                return PixelPeekUSB();
             }, token);
         }
 
-        public Task<string> GetVersion(CancellationToken token)
+        public Task<long> GetUnixTime(CancellationToken token)
         {
             return Task.Run(() =>
             {
-                Send(SwitchCommand.GetVersion(false));
+                Send(SwitchCommand.GetUnixTime(false));
                 byte[] baseBytes = ReadBulkUSB();
-                Log($"getVersion:{BitConverter.ToString(baseBytes)}");
-                string version = Encoding.UTF8.GetString(baseBytes).TrimEnd('\0').TrimEnd('\n');
-                return "2.2";
-            }, token);
-        }
-
-        public Task<bool> IsProgramRunning(string titleID, CancellationToken token)
-        {
-            return Task.Run(() =>
-            {
-                Send(SwitchCommand.IsProgramRunning(titleID, false));
-                byte[] baseBytes = ReadBulkUSB();
-                Log($"IsProgramRunning:{BitConverter.ToString(baseBytes)}");
-                return baseBytes[0] == 1;
+                return BitConverter.ToInt64(baseBytes, 0);
             }, token);
         }
     }

@@ -77,12 +77,20 @@ namespace SysBot.Pokemon
 
         protected override async Task EncounterLoop(SAV8SWSH sav, CancellationToken token)
         {
+            await InitializeSessionOffsets(token).ConfigureAwait(false);
             if (Settings.LairBotMode == LairBotModes.LairBot)
                 await LairBotLoop(token).ConfigureAwait(false);
             else await OffsetLogLoop(token).ConfigureAwait(false);
 
             if (Settings.EnableOHKO)
                 await SwitchConnection.WriteBytesAbsoluteAsync(BitConverter.GetBytes(0x7900E808), MainNsoBase + DamageOutputOffset, token).ConfigureAwait(false);
+        }
+
+        // For pointer offsets that don't change per session are accessed frequently, so set these each time we start.
+        private async Task InitializeSessionOffsets(CancellationToken token)
+        {
+            Log("Caching session offsets...");
+            OverworldOffset = await SwitchConnection.PointerAll(Offsets.OverworldPointer, token).ConfigureAwait(false);
         }
 
         private async Task LairBotLoop(CancellationToken token)
@@ -100,7 +108,7 @@ namespace SysBot.Pokemon
                     LairMiscScreenCalc = MainNsoBase + LairMiscScreenOffset;
                     Caught = 0;
 
-                    while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                    while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                         await Click(A, 0_500, token).ConfigureAwait(false);
 
                     Log($"{(StopBot ? "Waiting for next Legendary Adventure... Use \"$hunt (Species)\" to select a new Legendary!" : $"Starting a new Adventure...")}");
@@ -220,7 +228,7 @@ namespace SysBot.Pokemon
                 if (pk == null)
                 {
                     Log("Entered the lobby too fast, correcting...");
-                    while (!await IsOnOverworld(Hub.Config, token).ConfigureAwait(false))
+                    while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                         await Click(B, 0_500, token).ConfigureAwait(false);
 
                     await LairEntry(token).ConfigureAwait(false);
@@ -577,7 +585,7 @@ namespace SysBot.Pokemon
         private async Task<int> GetDyniteCount(CancellationToken token)
         {
             OtherItemsPouch = await Connection.ReadBytesAsync(OtherItemAddress, 2184, token).ConfigureAwait(false);
-            var pouch = new InventoryPouch8(InventoryType.Items, LairBotUtil.Pouch_Regular_SWSH, 999, 0, 546);
+            var pouch = new InventoryPouch8(InventoryType.Items, ItemStorage8SWSH.Instance, 999, 0, 546);
             pouch.GetPouch(OtherItemsPouch);
             return pouch.Items.FirstOrDefault(x => x.Index == 1604)!.Count;
         }
@@ -709,6 +717,7 @@ namespace SysBot.Pokemon
         {
             await CloseGame(Hub.Config, token).ConfigureAwait(false);
             await StartGameLair(Hub.Config, token).ConfigureAwait(false);
+            await InitializeSessionOffsets(token).ConfigureAwait(false);
         }
 
         private async Task LairEntry(CancellationToken token)
@@ -839,7 +848,7 @@ namespace SysBot.Pokemon
             for (int i = 0; i < 4; i++)
                 await Click(A, 1_000, token).ConfigureAwait(false);
 
-            while (!await IsOnOverworld(config, token).ConfigureAwait(false))
+            while (!await IsOnOverworld(OverworldOffset, token).ConfigureAwait(false))
                 await Click(B, 0_500, token).ConfigureAwait(false);
 
             Log("Back in the game!");

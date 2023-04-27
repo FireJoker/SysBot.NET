@@ -158,7 +158,7 @@ namespace SysBot.Pokemon
             return userIDs.ToArray();
         }
 
-        protected bool IsLegendaryOrMythical(ushort species) => Legal.Legends.Contains(species) || Legal.SubLegends.Contains(species) || Legal.Mythicals.Contains(species);
+        protected bool IsLegendaryOrMythical(ushort species) => SpeciesCategory.IsLegendary(species) || SpeciesCategory.IsMythical(species) || SpeciesCategory.IsSubLegendary(species);
 
         protected A GetLookupAsClassObject<A>(ulong id, string table, string filter = "", bool tableJoin = false)
         {

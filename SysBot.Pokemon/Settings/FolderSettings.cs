@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.IO;
+using static System.Environment;
 
 namespace SysBot.Pokemon
 {
@@ -18,6 +19,9 @@ namespace SysBot.Pokemon
         [Category(Files), Description("Destination folder: where all received PKM files are dumped to.")]
         public string DumpFolder { get; set; } = string.Empty;
 
+        [Category(Files), Description("Special folder: where all Special PKM files are dumped to.")]
+        public string SpecialFolder { get; set; } = string.Empty;
+
         public void CreateDefaults(string path)
         {
             var dump = Path.Combine(path, "dump");
@@ -28,6 +32,10 @@ namespace SysBot.Pokemon
             var distribute = Path.Combine(path, "distribute");
             Directory.CreateDirectory(distribute);
             DistributeFolder = distribute;
+
+            var special = Path.Combine(path, "special");
+            Directory.CreateDirectory(special);
+            SpecialFolder = special;
         }
     }
 }

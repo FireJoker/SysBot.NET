@@ -3,11 +3,9 @@ using SysBot.Base;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Diagnostics;
-using PKHeX.Core;
-using SysBot.Base;
 using static SysBot.Base.SwitchButton;
 using static SysBot.Pokemon.PokeDataOffsets;
 
@@ -331,6 +329,23 @@ namespace SysBot.Pokemon
             await Connection.WriteBytesAsync(data, TextSpeedOffset, token).ConfigureAwait(false);
         }
 
+        // Switches to box 1, then clears slot1 to prep fossil and egg bots.
+        public async Task SetupBoxState(IDumper DumpSetting, CancellationToken token)
+        {
+            await SetCurrentBox(0, token).ConfigureAwait(false);
+
+            var existing = await ReadBoxPokemon(0, 0, token).ConfigureAwait(false);
+            if (existing.Species != 0 && existing.ChecksumValid)
+            {
+                Log("Destination slot is occupied! Dumping the Pokémon found there...");
+                DumpPokemon(DumpSetting.DumpFolder, "saved", existing);
+            }
+
+            Log("Clearing destination slot to start the bot.");
+            PK8 blank = new();
+            await SetBoxPokemon(blank, 0, 0, token).ConfigureAwait(false);
+        }
+
         public async Task ToggleAirplane(int delay, CancellationToken token)
         {
             await PressAndHold(HOME, 2_000, 1_000, token).ConfigureAwait(false);
@@ -394,13 +409,13 @@ namespace SysBot.Pokemon
                 ));
         }
 
-        public async Task SaveGame(PokeTradeHubConfig config, CancellationToken token)
+        public async Task SaveGame(ulong offset, CancellationToken token)
         {
             await Click(B, 0_200, token).ConfigureAwait(false);
             Log("Saving the game...");
             await Click(X, 2_000, token).ConfigureAwait(false);
             await Click(R, 0_250, token).ConfigureAwait(false);
-            while (!await IsOnOverworld(config, token).ConfigureAwait(false))
+            while (!await IsOnOverworld(offset, token).ConfigureAwait(false))
                 await Click(A, 0_500, token).ConfigureAwait(false);
             Log("Game saved!");
         }
@@ -453,22 +468,6 @@ namespace SysBot.Pokemon
                 msWaited += waitInterval;
             }
             return null;
-
-        // Switches to box 1, then clears slot1 to prep fossil and egg bots.
-        public async Task SetupBoxState(IDumper DumpSetting, CancellationToken token)
-        {
-            await SetCurrentBox(0, token).ConfigureAwait(false);
-
-            var existing = await ReadBoxPokemon(0, 0, token).ConfigureAwait(false);
-            if (existing.Species != 0 && existing.ChecksumValid)
-            {
-                Log("Destination slot is occupied! Dumping the Pokémon found there...");
-                DumpPokemon(DumpSetting.DumpFolder, "saved", existing);
-            }
-
-            Log("Clearing destination slot to start the bot.");
-            PK8 blank = new();
-            await SetBoxPokemon(blank, 0, 0, token).ConfigureAwait(false);
         }
     }
 }

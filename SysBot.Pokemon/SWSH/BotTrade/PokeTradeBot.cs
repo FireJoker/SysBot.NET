@@ -1196,7 +1196,7 @@ await ExitTrade(false, token).ConfigureAwait(false);
             Log($"{(!laInit.Valid ? "Legalized" : "Fixed Nickname/OT for")} {(Species)clone.Species}!");
 
             await Click(A, 0_800, token).ConfigureAwait(false);
-            await SetBoxPokemon(clone, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
+            await SetBoxPokemon(clone, 0, 0, token, sav).ConfigureAwait(false);
             await Click(A, 0_500, token).ConfigureAwait(false);
             poke.SendNotification(this, "Now confirm the trade!");
 
@@ -1281,16 +1281,6 @@ await ExitTrade(false, token).ConfigureAwait(false);
                 cln.ClearNickname();
             }
 
-            string[] MaxLairLegendaries = new string[47]  //大冒险神兽池
-            { "144","145","146","150","243","244","245",
-                "249","250","380","381","382","383","384",
-                "480","481","482","483","484","485","487",
-                "488","641","642","643","644","645","646",
-                "716","717","718","785","786","787","788",
-                "791","792","793","794","795","796","797",
-                "798","799","800","805","806"
-            };
-
             // Set different shiny types
             uint shinyForm = (uint)(toSend.TID16 ^ toSend.SID16 ^ ((toSend.PID >> 16) ^ (toSend.PID & 0xFFFF)));
 
@@ -1301,7 +1291,8 @@ await ExitTrade(false, token).ConfigureAwait(false);
             else if (shinyForm == 0)
                 cln.PID = (uint)(((TID5 ^ SID5 ^ (cln.PID & 0xFFFF) ^ 0u) << 16) | (cln.PID & 0xFFFF));
             // Set special star shiny
-            if (MaxLairLegendaries.Contains($"{toSend.Species}") && (shinyForm < 16) && (toSend.Form != 1))
+            bool isLairLegendary = Enum.IsDefined(typeof(LairLegendary), toSend.Species);
+            if (isLairLegendary && (shinyForm < 16) && (toSend.Form != 1))
                 cln.PID = (uint)(((TID5 ^ SID5 ^ (cln.PID & 0xFFFF) ^ 1u) << 16) | (cln.PID & 0xFFFF));
             cln.RefreshChecksum();
 
@@ -1310,7 +1301,7 @@ await ExitTrade(false, token).ConfigureAwait(false);
             {
                 Log($"Pokémon is valid, use trade partnerInfo");
                 Log($"New Offered Pokemon: {(Species)cln.Species}, TName: {cln.OT_Name}, TID: {cln.DisplayTID}, SID: {cln.DisplaySID}, Language: {cln.Language}, OTGender: {cln.OT_Gender}");
-                await SetBoxPokemon(cln, InjectBox, InjectSlot, token, sav).ConfigureAwait(false);
+                await SetBoxPokemon(cln, 0, 0, token, sav).ConfigureAwait(false);
             }
             else
             {

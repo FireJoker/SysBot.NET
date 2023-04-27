@@ -139,7 +139,7 @@ namespace SysBot.Base
         public async Task<string> GetGameInfo(string info, CancellationToken token)
         {
             var bytes = await ReadRaw(SwitchCommand.GetGameInfo(info), 17, token).ConfigureAwait(false);
-            return Encoding.ASCII.GetString(bytes).Trim(new char[] { '\0', '\n'});
+            return Encoding.ASCII.GetString(bytes).Trim(new char[] { '\0', '\n' });
         }
 
         public async Task<bool> IsProgramRunning(ulong pid, CancellationToken token)
@@ -237,15 +237,31 @@ namespace SysBot.Base
             return BitConverter.ToUInt64(offsetBytes, 0);
         }
 
-        public async Task<byte[]> Screengrab(CancellationToken token)
+        public async Task<byte[]> PixelPeek(CancellationToken token)
         {
-            List<byte> flexBuffer = new();
-            Connection.ReceiveTimeout = 1_000;
-
-            await SendAsync(SwitchCommand.Screengrab(), token).ConfigureAwait(false);
+            await SendAsync(SwitchCommand.PixelPeek(), token).ConfigureAwait(false);
             await Task.Delay(Connection.ReceiveBufferSize / DelayFactor + BaseDelay, token).ConfigureAwait(false);
 
+            var data = await FlexRead(token).ConfigureAwait(false);
+            var result = Array.Empty<byte>();
+            try
+            {
+                result = Decoder.ConvertHexByteStringToBytes(data);
+            }
+            catch (Exception e)
+            {
+                LogError($"Malformed screenshot data received:\n{e.Message}");
+            }
+
+            return result;
+        }
+
+        private async Task<byte[]> FlexRead(CancellationToken token)
+        {
+            List<byte> flexBuffer = new();
             int available = Connection.Available;
+            Connection.ReceiveTimeout = 1_000;
+
             do
             {
                 byte[] buffer = new byte[available];
@@ -256,7 +272,7 @@ namespace SysBot.Base
                 }
                 catch (Exception ex)
                 {
-                    LogError($"Socket exception thrown while receiving screenshot data:\n{ex.Message}");
+                    LogError($"Socket exception thrown while receiving data:\n{ex.Message}");
                     return Array.Empty<byte>();
                 }
 
@@ -265,38 +281,14 @@ namespace SysBot.Base
             } while (flexBuffer.Count == 0 || flexBuffer.Last() != (byte)'\n');
 
             Connection.ReceiveTimeout = 0;
-            var result = Array.Empty<byte>();
-            try
-            {
-                result = Decoder.ConvertHexByteStringToBytes(flexBuffer.ToArray());
-            }
-            catch (Exception e)
-            {
-                LogError($"Malformed screenshot data received:\n{e.Message}");
-            }
-
-            return result;
+            return flexBuffer.ToArray();
         }
 
-        public async Task<byte[]> PixelPeek(CancellationToken token)
+        public async Task<long> GetUnixTime(CancellationToken token)
         {
-            var buffer = new byte[(0x7D000 * 2)+1];
-            await SendAsync(SwitchCommand.PixelPeek(), token).ConfigureAwait(false);
-            var len = Read(buffer);
-            return buffer.Take(len).ToArray();
-        }
-
-        public async Task<string> GetVersion(CancellationToken token)
-        {
-            var bytes = await ReadRaw(SwitchCommand.GetVersion(), 9, token).ConfigureAwait(false);
-            return Encoding.UTF8.GetString(bytes).TrimEnd('\0').TrimEnd('\n'); ;
-        }
-
-        public async Task<bool> IsProgramRunning(string titleID, CancellationToken token)
-        {
-            var bytes = await ReadRaw(SwitchCommand.IsProgramRunning(titleID), 17, token).ConfigureAwait(false);
-            var isRunning = Encoding.ASCII.GetString(bytes);
-            return ulong.Parse(isRunning.Trim(), System.Globalization.NumberStyles.HexNumber) == 1;
+            var result = await ReadBytesFromCmdAsync(SwitchCommand.GetUnixTime(), 8, token).ConfigureAwait(false);
+            Array.Reverse(result);
+            return BitConverter.ToInt64(result, 0);
         }
     }
 }

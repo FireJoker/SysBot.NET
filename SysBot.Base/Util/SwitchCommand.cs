@@ -288,14 +288,6 @@ namespace SysBot.Base
         /// <returns>Encoded command bytes</returns>
         public static byte[] SetScreen(ScreenState state, bool crlf = true) => Encode($"screen{(state == ScreenState.On ? "On" : "Off")}", crlf);
 
-        /// <summary>
-        /// Checks if a process is running.
-        /// </summary>
-        /// <param name="pid">Process ID</param>
-        /// <param name="crlf">Line terminator (unused by USB protocol)</param>
-        /// <returns>Encoded command bytes</returns>
-        public static byte[] IsProgramRunning(string titleID, bool crlf = true) => Encode($"isProgramRunning 0x{titleID}", crlf);
-
         /// Advances system network clock to advance time by one day at a time.
         /// </summary>
         /// <param name="resetAfterNSkips">Day advance amount after which we should reset time to initial time (0 if we shouldn't)</param>
@@ -316,12 +308,16 @@ namespace SysBot.Base
         /// </summary>
         /// <param name="crlf">Line terminator (unused by USB's protocol)</param>
         /// <returns>Encoded command bytes</returns>
-
-        public static byte[] Screengrab(bool crlf = true) => Encode("pixelPeek", crlf);
-
-
         public static byte[] PixelPeek(bool crlf = true) => Encode("pixelPeek", crlf);
 
-        public static byte[] GetVersion(bool crlf = true) => Encode("getVersion", crlf);
+        /// <summary>
+        /// Checks if a process is running.
+        /// </summary>
+        /// <param name="pid">Process ID</param>
+        /// <param name="crlf">Line terminator (unused by USB protocol)</param>
+        /// <returns>Encoded command bytes</returns>
+        public static byte[] IsProgramRunning(ulong pid, bool crlf = true) => Encode($"isProgramRunning 0x{pid:x16}", crlf);
+
+        public static byte[] GetUnixTime(bool crlf = true) => Encode("getUnixTime", crlf);
     }
 }
